@@ -28,7 +28,7 @@ button{cursor:pointer;font-family:'DM Sans',Arial,sans-serif}
 .row-hover{transition:background .15s}
 .row-hover:hover{background:rgba(255,255,255,0.05)!important}
 .tab-btn{border-radius:8px;padding:6px 12px;font-size:11px;font-weight:700;white-space:nowrap;transition:all .15s}
-.section-title{font-size:11px;font-weight:800;color:#64748B;letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;font-family:'Syne',sans-serif}
+.section-title{font-size:11px;font-weight:800;color:#64748B;letter-spacing:.8px;text-transform:uppercase;margin-bottom:14px;font-family:Arial Black,sans-serif}
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.82);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:16px}
 .modal-box{background:#0D1526;border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:24px;width:100%;max-height:92vh;overflow-y:auto;position:relative}
 #header{background:rgba(13,21,38,.97);border-bottom:1px solid rgba(255,255,255,.07);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:60px;backdrop-filter:blur(20px);position:sticky;top:0;z-index:100}
@@ -62,12 +62,12 @@ body.light-mode .row-hover:hover{background:rgba(0,0,0,0.03)!important}
 @keyframes loginFadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .login-logo{width:160px;height:160px;margin:0 auto 24px;filter:drop-shadow(0 0 20px rgba(255,215,0,0.4));animation:logoPulse 3s ease-in-out infinite;border-radius:50%}
 @keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 20px rgba(255,215,0,0.4))}50%{filter:drop-shadow(0 0 30px rgba(255,215,0,0.6))}}
-.login-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:900;color:#FFD700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
+.login-title{font-family:Arial Black,sans-serif;font-size:22px;font-weight:900;color:#FFD700;letter-spacing:2px;text-transform:uppercase;margin-bottom:4px}
 .login-subtitle{font-size:11px;color:rgba(0,166,81,0.8);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px;font-weight:700}
 .login-divider{width:60px;height:2px;background:linear-gradient(90deg,transparent,#FFD700,transparent);margin:0 auto 28px}
 .login-input{width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,215,0,0.2);border-radius:10px;padding:13px 16px;color:#F1F5F9;font-size:14px;outline:none;text-align:center;letter-spacing:3px;font-family:'DM Mono',monospace;transition:all 0.3s;box-sizing:border-box;margin-bottom:16px}
 .login-input:focus{border-color:rgba(255,215,0,0.5);box-shadow:0 0 20px rgba(255,215,0,0.1)}
-.login-btn{width:100%;background:linear-gradient(135deg,#00A651,#006B35);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#FFD700;padding:13px;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;font-family:'Syne',sans-serif}
+.login-btn{width:100%;background:linear-gradient(135deg,#00A651,#006B35);border:1px solid rgba(255,215,0,0.3);border-radius:10px;color:#FFD700;padding:13px;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:1.5px;text-transform:uppercase;font-family:Arial Black,sans-serif}
 .login-error{color:#EF4444;font-size:12px;margin-top:12px;display:none}
 .login-footer{margin-top:28px;font-size:10px;color:rgba(255,215,0,0.3);letter-spacing:1px;text-transform:uppercase}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
@@ -110,7 +110,7 @@ try {
   <div style="display:flex;align-items:center;gap:10px">
     <svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;border-radius:9px"><rect width="100" height="100" rx="22" fill="#00A651"/><rect x="4" y="4" width="92" height="92" rx="18" fill="none" stroke="#FFD700" stroke-width="5"/><text x="50" y="63" font-family="Arial Black,Arial,sans-serif" font-size="42" font-weight="900" fill="#FFD700" text-anchor="middle" letter-spacing="-1">CI</text></svg>
     <div>
-      <div style="font-size:13px;font-weight:800;color:#FFD700;font-family:'Syne',sans-serif;letter-spacing:.5px">CITILINK</div>
+      <div style="font-size:13px;font-weight:800;color:#FFD700;font-family:Arial Black,sans-serif;letter-spacing:.5px">CITILINK</div>
       <div style="font-size:9px;color:#00A651;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-top:-1px">Safety Investigation System</div>
     </div>
   </div>
@@ -127,7 +127,7 @@ try {
   </div>
   <div id="due-popup" style="display:none;position:fixed;top:68px;right:20px;width:320px;background:#0D1526;border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:16px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-size:12px;font-weight:800;color:#EF4444;font-family:'Syne',sans-serif">⚠️ Due Date Alerts</div>
+      <div style="font-size:12px;font-weight:800;color:#EF4444;font-family:Arial Black,sans-serif">⚠️ Due Date Alerts</div>
       <button onclick="toggleDuePopup()" style="background:none;border:none;color:#64748B;cursor:pointer;font-size:14px">✕</button>
     </div>
     <div id="due-list"></div>
@@ -498,7 +498,7 @@ function renderStats(){
   ];
   document.getElementById("stats-row").innerHTML=stats.map(([l,v,a])=>`
     <div class="stat-card">
-      <div style="font-size:26px;font-weight:800;color:${a};font-family:'Syne',sans-serif;letter-spacing:-1px">${v}</div>
+      <div style="font-size:26px;font-weight:800;color:${a};font-family:Arial Black,sans-serif;letter-spacing:-1px">${v}</div>
       <div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;letter-spacing:.4px;text-transform:uppercase">${l}</div>
     </div>`).join("");
   // Update cases nav label
@@ -513,7 +513,7 @@ function renderDashboard(){
   if(cases.length===0){
     el.innerHTML=`<div style="text-align:center;padding:80px 20px">
       <div style="font-size:64px;margin-bottom:16px">✈️</div>
-      <h3 style="font-size:20px;font-weight:800;color:#F1F5F9;font-family:'Syne',sans-serif;margin-bottom:8px">Belum Ada Kasus Investigasi</h3>
+      <h3 style="font-size:20px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif;margin-bottom:8px">Belum Ada Kasus Investigasi</h3>
       <p style="color:#64748B;font-size:13px;max-width:320px;margin:0 auto 22px;line-height:1.6">Data tersimpan permanen di perangkat ini. Mulai dengan membuka kasus pertama.</p>
       <button class="btn-primary" onclick="openNewCase()">+ Buka Investigasi Baru</button>
     </div>`;
@@ -708,7 +708,7 @@ function renderCaseModal(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
       <div>
         <div style="font-size:10px;color:#64748B;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px;font-family:'DM Mono',monospace">${esc(c.id)}</div>
-        <h2 style="margin:0;font-size:17px;font-weight:800;color:#F1F5F9;font-family:'Syne',sans-serif;line-height:1.3;max-width:520px">${esc(c.title)}</h2>
+        <h2 style="margin:0;font-size:17px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif;line-height:1.3;max-width:520px">${esc(c.title)}</h2>
         <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center">
           ${badge(c.status,sc)}
           <span style="font-size:11px;color:${SEV_COLOR[c.severity]||"#94A3B8"};font-weight:700">● ${esc(c.severity)}</span>
@@ -867,7 +867,7 @@ function renderRiskTab(c){
       matHtml+=`<td style="padding:3px;text-align:center">
         <div class="erc-cell" onclick="${show?`setERC('${c.id}',${rowIdx},${ci})`:"void(0)"}"
           style="background:${show?(isSel?info.color+"25":info.color+"0E"):"rgba(255,255,255,0.02)"};border:${isSel?`2px solid ${info.color}`:`1px solid ${show?info.color+"30":"rgba(255,255,255,0.04)"}`};transform:${isSel?"scale(1.06)":"scale(1)"};box-shadow:${isSel?`0 0 14px ${info.color}45`:"none"};cursor:${show?"pointer":"default"}">
-          ${show?`<div style="font-size:17px;font-weight:900;color:${info.color};font-family:'Syne',sans-serif">${val}</div><div style="font-size:9px;color:${info.color};opacity:.85;font-weight:700">${info.label}</div>`:`<div style="font-size:11px;color:#334155">—</div>`}
+          ${show?`<div style="font-size:17px;font-weight:900;color:${info.color};font-family:Arial Black,sans-serif">${val}</div><div style="font-size:9px;color:${info.color};opacity:.85;font-weight:700">${info.label}</div>`:`<div style="font-size:11px;color:#334155">—</div>`}
         </div>
       </td>`;
     });
@@ -879,11 +879,11 @@ function renderRiskTab(c){
   <div style="background:${si.color}15;border:1px solid ${si.color}50;border-radius:12px;padding:18px;margin-bottom:16px">
     <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px">
       <div style="width:56px;height:56px;border-radius:12px;background:${si.color}20;border:2px solid ${si.color};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-        <span style="font-size:22px;font-weight:900;color:${si.color};font-family:'Syne',sans-serif">${score}</span>
+        <span style="font-size:22px;font-weight:900;color:${si.color};font-family:Arial Black,sans-serif">${score}</span>
       </div>
       <div>
         <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px">ERC Score Result</div>
-        <div style="font-size:20px;font-weight:900;color:${si.color};font-family:'Syne',sans-serif">${si.label}</div>
+        <div style="font-size:20px;font-weight:900;color:${si.color};font-family:Arial Black,sans-serif">${si.label}</div>
         <div style="font-size:11px;color:#94A3B8;margin-top:2px">Outcome: <b style="color:#E2E8F0">${ERC_OUTCOMES[rIdx]}</b> · Barriers: <b style="color:#E2E8F0">${ERC_BARRIERS[bIdx]}</b></div>
       </div>
     </div>
@@ -1115,7 +1115,7 @@ function renderLessonsTab(c){
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
       <span style="font-size:20px">💡</span>
       <div>
-        <div style="font-size:13px;font-weight:800;color:#34D399;font-family:'Syne',sans-serif">Lessons Learned</div>
+        <div style="font-size:13px;font-weight:800;color:#34D399;font-family:Arial Black,sans-serif">Lessons Learned</div>
         <div style="font-size:11px;color:#64748B;margin-top:2px">Document key takeaways to prevent recurrence across the organization.</div>
       </div>
     </div>
@@ -1236,7 +1236,7 @@ function renderFormModal(){
   const v=(k,def="")=>esc(c?c[k]||def:def);
   document.getElementById("modal-form").innerHTML=`<div class="modal-box" style="max-width:580px">
     <button onclick="closeFormModal()" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.07);border:none;color:#94A3B8;width:30px;height:30px;border-radius:8px;font-size:16px">✕</button>
-    <h2 style="margin:0 0 20px;font-size:18px;font-weight:800;color:#F1F5F9;font-family:'Syne',sans-serif">${isEdit?"✏️ Edit Kasus":"✈️ Buka Investigasi Baru"}</h2>
+    <h2 style="margin:0 0 20px;font-size:18px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif">${isEdit?"✏️ Edit Kasus":"✈️ Buka Investigasi Baru"}</h2>
     <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Judul / Deskripsi Singkat *</label><input id="f-title" value="${v("title")}" placeholder="e.g. Hard Landing – CGK Runway 25R"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
       <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Tipe Kejadian</label>
@@ -1447,7 +1447,7 @@ function renderTrend(){
 
   var html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">';
   [["Total Kasus",cases.length,"#94A3B8"],["Dengan GADP",totalWithGADP+"/"+cases.length,"#3B82F6"],["Top Risk Area",topGADP,"#EF4444"],["Bulan Ini",thisMonthTotal,"#F59E0B"]].forEach(function(s){
-    html+='<div class="stat-card"><div style="font-size:22px;font-weight:800;color:'+s[2]+';font-family:'Syne',sans-serif">'+s[1]+'</div><div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+s[0]+'</div></div>';
+    html+='<div class="stat-card"><div style="font-size:22px;font-weight:800;color:'+s[2]+';font-family:Arial Black,sans-serif">'+s[1]+'</div><div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+s[0]+'</div></div>';
   });
   html+='</div>';
 
