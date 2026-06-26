@@ -472,14 +472,17 @@ function phaseBar(phase){
 // ─────────────────────────────────────────────
 function setView(v){
   currentView=v;
-  document.getElementById("nav-dashboard").style.background=v==="dashboard"?"rgba(255,255,255,0.1)":"transparent";
-  document.getElementById("nav-dashboard").style.color=v==="dashboard"?"#F1F5F9":"#475569";
-  document.getElementById("nav-dashboard").style.border=v==="dashboard"?"1px solid rgba(255,255,255,0.15)":"1px solid transparent";
-  document.getElementById("nav-cases").style.background=v==="cases"?"rgba(255,255,255,0.1)":"transparent";
-  document.getElementById("nav-cases").style.color=v==="cases"?"#F1F5F9":"#475569";
-  document.getElementById("nav-cases").style.border=v==="cases"?"1px solid rgba(255,255,255,0.15)":"1px solid transparent";
-  document.getElementById("view-dashboard").style.display=v==="dashboard"?"block":"none";
-  document.getElementById("view-cases").style.display=v==="cases"?"block":"none";
+  ["dashboard","trend","cases"].forEach(function(n){
+    var btn=document.getElementById("nav-"+n);
+    var active=v===n;
+    if(btn){
+      btn.style.background=active?"rgba(255,255,255,0.1)":"transparent";
+      btn.style.color=active?"#F1F5F9":"#475569";
+      btn.style.border=active?"1px solid rgba(255,255,255,0.15)":"1px solid transparent";
+    }
+    var el=document.getElementById("view-"+n);
+    if(el) el.style.display=active?"block":"none";
+  });
   renderAll();
 }
 
