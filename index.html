@@ -227,21 +227,28 @@ function checkDueDates(){
       list.innerHTML='<div style="text-align:center;color:#64748B;font-size:12px;padding:16px 0">✅ Tidak ada due date mendesak</div>';
     } else {
       list.innerHTML=alerts.sort(function(a,b){return a.diffDays-b.diffDays;}).map(function(a){
-        var col=a.overdue?"#EF4444":a.diffDays<=3?"#F97316":"#F59E0B";
-        var lbl=a.overdue?"OVERDUE "+Math.abs(a.diffDays)+"d":a.diffDays===0?"Due TODAY":"Due in "+a.diffDays+"d";
-        var div="<div onclick="openCase('"+a.caseId+"')" style="padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-bottom:8px;cursor:pointer">";
-        div+="<div style="display:flex;justify-content:space-between;margin-bottom:4px">";
-        div+="<span style="font-size:10px;font-weight:800;color:"+col+";background:"+col+"18;padding:2px 7px;border-radius:4px">"+lbl+"</span>";
-        div+=(a.isRec?"<span style="font-size:9px;color:#8B5CF6;font-weight:700">📨 Rec</span>":"<span style="font-size:9px;color:#F59E0B;font-weight:700">🛡 Mit</span>");
-        div+="</div>";
-        div+="<div style="font-size:11px;color:#E2E8F0;font-weight:600;margin-bottom:2px">"+esc(a.caseTitle)+"</div>";
-        div+="<div style="font-size:10px;color:#64748B">"+esc(a.action.substring(0,60))+(a.action.length>60?"...":"")+"</div>";
-        div+="<div style="font-size:9px;color:#475569;margin-top:3px">📅 "+a.dueDate+"</div></div>";
-        return div;
+        var col=a.overdue?'#EF4444':a.diffDays<=3?'#F97316':'#F59E0B';
+        var lbl=a.overdue?('OVERDUE '+Math.abs(a.diffDays)+'d'):a.diffDays===0?'Due TODAY':('Due in '+a.diffDays+'d');
+        var d='<div data-caseid="'+a.caseId+'" style="padding:10px 12px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.15);border-radius:8px;margin-bottom:8px;cursor:pointer">';
+        d+='<div style="display:flex;justify-content:space-between;margin-bottom:4px">';
+        d+='<span style="font-size:10px;font-weight:800;color:'+col+';padding:2px 7px;border-radius:4px">'+lbl+'</span>';
+        d+=(a.isRec?'<span style="font-size:9px;color:#8B5CF6;font-weight:700">Rec</span>':'<span style="font-size:9px;color:#F59E0B;font-weight:700">Mit</span>');
+        d+='</div>';
+        d+='<div style="font-size:11px;color:#E2E8F0;font-weight:600;margin-bottom:2px">'+esc(a.caseTitle)+'</div>';
+        d+='<div style="font-size:10px;color:#64748B">'+esc(a.action.substring(0,55))+(a.action.length>55?'...':'')+'</div>';
+        d+='<div style="font-size:9px;color:#475569;margin-top:3px">Due: '+a.dueDate+'</div></div>';
+        return d;
       }).join('');
     }
   }
 }
+document.addEventListener('click',function(e){
+  var item=e.target.closest('[data-caseid]');
+  if(item&&item.closest('#due-popup')){
+    var cid=item.getAttribute('data-caseid');
+    if(cid){toggleDuePopup();openCase(cid);}
+  }
+});
 function toggleDuePopup(){
   var popup=document.getElementById("due-popup");
   if(!popup) return;
