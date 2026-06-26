@@ -1539,7 +1539,9 @@ function renderTrend(){
 function renderAll(){
   renderStats();
   if(currentView==="dashboard") renderDashboard();
+  else if(currentView==="trend") renderTrend();
   else renderCases();
+  checkDueDates();
 }
 
 // ─────────────────────────────────────────────
