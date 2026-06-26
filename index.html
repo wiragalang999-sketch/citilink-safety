@@ -399,25 +399,37 @@ const GADP_AREAS = [
   {code:"WSTRW", label:"Wind Shear or Thunderstorm"}
 ];
 
-const ERC_BARRIERS = ["Effective","Limited","Minimal","Not Effective"];
-const ERC_BARRIER_DESC = ["Barriers are strong and reliable","Barriers exist but have weaknesses","Only weak barriers remain","No effective barriers remain"];
-const ERC_OUTCOMES = ["No Accident Outcome","Minor Injuries or Damage","Major Accident","Catastrophic Accident"];
-const ERC_OUTCOME_DESC = [
-  "No potential damage or injury. Any event which could not escalate into an accident.",
-  "Minor injuries, minor damage to aircraft. E.g. pushback accident, minor weather damage.",
-  "1–2 fatalities, multiple serious injuries, major damage. E.g. high speed taxiway collision.",
-  "Loss of aircraft or 3+ fatalities. E.g. loss of control, mid-air collision, CFIT."
+const GADP_AREAS = [
+  {code:"AMAN",  label:"Abrupt Maneuver"},
+  {code:"ARC",   label:"Abnormal Runway Contact"},
+  {code:"ADRM",  label:"Aerodrome"},
+  {code:"BIRD",  label:"Bird Strike"},
+  {code:"CABIN", label:"Cabin Safety Events"},
+  {code:"CFIT",  label:"Controlled Flight Into or Toward Terrain"},
+  {code:"CTOL",  label:"Collision with Obstacle(s) During Takeoff and Landing"},
+  {code:"EVAC",  label:"Evacuation"},
+  {code:"EXTL",  label:"External Load Related Occurrences"},
+  {code:"FUEL",  label:"Fuel Related"},
+  {code:"GCOL",  label:"Ground Collision"},
+  {code:"GTOW",  label:"Glider Towing Related Events"},
+  {code:"LALT",  label:"Low Altitude Operations"},
+  {code:"LOC-G", label:"Loss of Control - Ground"},
+  {code:"LOC-I", label:"Loss of Control - Inflight"},
+  {code:"LOLI",  label:"Loss of Lifting Conditions En Route"},
+  {code:"MAC",   label:"Airprox / TCAS Alert / Loss of Separation / MAC"},
+  {code:"RAMP",  label:"Ground Handling"},
+  {code:"RE",    label:"Runway Excursion"},
+  {code:"RI",    label:"Runway Incursion"},
+  {code:"RI-VAP",label:"Runway Incursion - Vehicle, Aircraft, or Person (legacy)"},
+  {code:"RI-A",  label:"Runway Incursion - Animal (legacy)"},
+  {code:"SCF-NP",label:"System/Component Failure or Malfunction (Non-Powerplant)"},
+  {code:"SCF-PP",label:"System/Component Failure or Malfunction (Powerplant)"},
+  {code:"UIMC",  label:"Unintended Flight in IMC"},
+  {code:"USOS",  label:"Undershoot/Overshoot"},
+  {code:"WILD",  label:"Wildlife Strike"},
+  {code:"WSTRW", label:"Wind Shear or Thunderstorm"}
 ];
-const ERC_MATRIX = [[1,1,1,1],[2,4,20,100],[10,21,101,500],[50,102,502,2500]];
-const LS_KEY = "citilink_safety_v1";
 
-function ercColor(v){
-  if(v<=2)   return {color:"#4ADE80",label:"Acceptable",action:"No immediate action required. Monitor periodically."};
-  if(v<=20)  return {color:"#A3E635",label:"Low",action:"Low priority. Address during routine safety reviews."};
-  if(v<=101) return {color:"#FACC15",label:"Moderate",action:"Action required. Implement controls within defined timeframe."};
-  if(v<=502) return {color:"#F97316",label:"High",action:"Urgent action required. Senior management attention needed."};
-  return {color:"#EF4444",label:"Unacceptable",action:"STOP activity. Immediate corrective action mandatory."};
-}
 
 // ─────────────────────────────────────────────
 // STATE
