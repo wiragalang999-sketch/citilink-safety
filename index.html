@@ -85,7 +85,7 @@ try {
     messagingSenderId: "44199737192",
     appId: "1:44199737192:web:1fa682a83a44e82d2ac8dd"
   });
-  _fbDB = firebase.firestore();
+  window._fbDB = firebase.firestore();
   console.log("Firebase OK, _fbDB set:", !!window._fbDB);
 } catch(e) { console.warn("Firebase failed:", e); }
 </script>
@@ -150,7 +150,7 @@ try {
 <script>
 
 // ── FIREBASE ───────────────────────────────────────────────────────────────────
-var _fbDB = null;
+// _fbDB set by Firebase init script above
 
 // ── LOGIN ──────────────────────────────────────────────────────────────────────
 var LOGIN_PASS = "citilink2026";
@@ -314,12 +314,12 @@ function saveInlineGADP(caseId){
   setTimeout(function(){renderCaseModal();},200);
 }
 function showSyncStatus(msg,color){ var el=document.getElementById("sync-status"); if(el){el.textContent=msg;el.style.color=color||"#64748B";} }
-function saveCase(c){ try{localStorage.setItem("citilink_safety_v1",JSON.stringify(cases));}catch(e){} if(_fbDB){_fbDB.collection("cases").doc(c.id).set(c).catch(function(e){console.warn("Save failed",e);});} }
-function deleteFromFirestore(id){ if(_fbDB){_fbDB.collection("cases").doc(id).delete().catch(function(e){console.warn("Del failed",e);});} }
+function saveCase(c){ try{localStorage.setItem("citilink_safety_v1",JSON.stringify(cases));}catch(e){} if(window._fbDB){window._fbDB.collection("cases").doc(c.id).set(c).catch(function(e){console.warn("Save failed",e);});} }
+function deleteFromFirestore(id){ if(window._fbDB){window._fbDB.collection("cases").doc(id).delete().catch(function(e){console.warn("Del failed",e);});} }
 function startFirestoreSync(){
-  if(!_fbDB){showSyncStatus("💾 Lokal","#64748B");return;}
+  if(!window._fbDB){showSyncStatus("💾 Lokal","#64748B");return;}
   showSyncStatus("🔄 Connecting...","#F59E0B");
-  _fbDB.collection("cases").onSnapshot(function(snap){
+  window._fbDB.collection("cases").onSnapshot(function(snap){
     cases=snap.docs.map(function(d){return d.data();});
     cases.sort(function(a,b){return (b.date||"").localeCompare(a.date||"");});
     try{localStorage.setItem("citilink_safety_v1",JSON.stringify(cases));}catch(e){}
@@ -347,7 +347,6 @@ const MIT_STATUS = {
   "In Progress": {color:"#F59E0B",bg:"rgba(245,158,11,0.15)"},
   "Closed":      {color:"#10B981",bg:"rgba(16,185,129,0.15)"},
 };
-const LS_KEY = "citilink_safety_v1";
 const EVENT_TYPES = ["Accident","Serious Incident","Incident","Precursor"];
 
 
@@ -421,7 +420,7 @@ function loadData(){
 function saveData(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(cases)); }
   catch(e){ alert("Storage penuh!"); }
-  if(_fbDB){ cases.forEach(function(c){ _fbDB.collection("cases").doc(c.id).set(c).catch(function(e){}); }); }
+  if(window._fbDB){ cases.forEach(function(c){ window._fbDB.collection("cases").doc(c.id).set(c).catch(function(e){}); }); }
 }
 
 // ─────────────────────────────────────────────
