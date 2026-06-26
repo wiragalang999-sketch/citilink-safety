@@ -1414,92 +1414,123 @@ function renderTrend(){
   var nowYM=new Date().toISOString().substring(0,7);
   var thisMonthTotal=months[nowYM]?months[nowYM].total:0;
   var GADP_COLORS=["#3B82F6","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#06B6D4","#84CC16","#F97316","#6366F1"];
-  var TYPE_COLORS={Accident:"#EF4444","Serious Incident":"#F97316",Incident:"#EAB308",Precursor:"#22C55E"};
+  var TYPE_COLORS={"Accident":"#EF4444","Serious Incident":"#F97316","Incident":"#EAB308","Precursor":"#22C55E"};
 
-  function lineChart(getData,keys,colors,xLabels,title){
-    if(!xLabels||xLabels.length===0) return '<p style="color:#475569;font-size:12px;text-align:center;padding:20px">Belum ada data.</p>';
-    var W=560,H=180,PL=40,PR=16,PT=28,PB=36,cW=W-PL-PR,cH=H-PT-PB;
-    var colW=cW/Math.max(xLabels.length,1);
+  function makeSVG(getData,keys,colors,xLabels,title){
+    if(!xLabels||xLabels.length===0) return "";
+    var W=540,H=170,PL=36,PR=12,PT=24,PB=32;
+    var cW=W-PL-PR,cH=H-PT-PB,colW=cW/Math.max(xLabels.length,1);
     var maxV=1;
     xLabels.forEach(function(m){ keys.forEach(function(k){ var v=getData(m,k)||0; if(v>maxV)maxV=v; }); });
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
-    svg+='<text x="'+(W/2)+'" y="16" fill="#64748B" font-size="10" font-weight="700" text-anchor="middle" font-family="Arial,sans-serif">'+title+'</text>';
+    var s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
+    s+='<text x="'+(W/2)+'" y="16" fill="#64748B" font-size="10" font-weight="700" text-anchor="middle">'+title+'</text>';
     for(var g=0;g<=4;g++){
-      var gy=PT+cH-(g/4)*cH; var gv=Math.round((g/4)*maxV);
-      svg+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="rgba(255,255,255,0.07)" stroke-width="1"/>';
-      svg+='<text x="'+(PL-4)+'" y="'+(gy+4)+'" fill="#475569" font-size="9" text-anchor="end" font-family="Arial,sans-serif">'+gv+'</text>';
+      var gy=PT+cH-(g/4)*cH;
+      s+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>';
+      s+='<text x="'+(PL-3)+'" y="'+(gy+3)+'" fill="#475569" font-size="8" text-anchor="end">'+Math.round((g/4)*maxV)+'</text>';
     }
     keys.forEach(function(k,ki){
       var col=colors[ki%colors.length];
       var pts=xLabels.map(function(m,mi){ return {x:PL+mi*colW+colW/2,y:PT+cH-((getData(m,k)||0)/maxV)*cH,v:getData(m,k)||0}; });
       if(pts.length>1){
-        var area="M"+pts[0].x+","+(PT+cH); pts.forEach(function(p){area+=" L"+p.x+","+p.y;}); area+=" L"+pts[pts.length-1].x+","+(PT+cH)+" Z";
-        svg+='<path d="'+area+'" fill="'+col+'" opacity="0.08"/>';
-        var line="M"+pts[0].x+","+pts[0].y; pts.slice(1).forEach(function(p){line+=" L"+p.x+","+p.y;});
-        svg+='<path d="'+line+'" fill="none" stroke="'+col+'" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
+        var ln="M"+pts[0].x+","+pts[0].y; pts.slice(1).forEach(function(p){ln+=" L"+p.x+","+p.y;});
+        s+='<path d="'+ln+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linecap="round"/>';
       }
-      pts.forEach(function(p){ svg+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="'+col+'" stroke="#080E1A" stroke-width="2"/>'; if(p.v>0) svg+='<text x="'+p.x+'" y="'+(p.y-9)+'" fill="'+col+'" font-size="9" text-anchor="middle" font-weight="700" font-family="Arial,sans-serif">'+p.v+'</text>'; });
-      xLabels.forEach(function(m,mi){ var x=PL+mi*colW+colW/2; svg+='<text x="'+x+'" y="'+(H-6)+'" fill="#475569" font-size="9" text-anchor="middle" font-family="Arial,sans-serif">'+m.substring(2)+'</text>'; });
+      pts.forEach(function(p){
+        s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+col+'" stroke="#080E1A" stroke-width="1.5"/>';
+        if(p.v>0) s+='<text x="'+p.x+'" y="'+(p.y-7)+'" fill="'+col+'" font-size="8" text-anchor="middle" font-weight="700">'+p.v+'</text>';
+      });
     });
-    svg+='</svg>'; return svg;
+    xLabels.forEach(function(m,mi){ s+='<text x="'+(PL+mi*colW+colW/2)+'" y="'+(H-4)+'" fill="#475569" font-size="8" text-anchor="middle">'+m.substring(2)+'</text>'; });
+    s+='</svg>';
+    return s;
   }
 
-  function legend(keys,colors){ return '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:8px">'+keys.map(function(k,i){ return '<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:50%;background:'+colors[i%colors.length]+'"></div><span style="font-size:10px;color:#94A3B8">'+k+'</span></div>'; }).join('')+'</div>'; }
+  function lgnd(keys,colors){ return '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+keys.map(function(k,i){ return '<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:'+colors[i%colors.length]+'"></div><span style="font-size:10px;color:#94A3B8">'+k+'</span></div>'; }).join('')+'</div>'; }
 
-  var html='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">';
-  [["Total Kasus",cases.length,"#94A3B8"],["Dengan GADP",totalWithGADP+"/"+cases.length,"#3B82F6"],["Top Risk Area",topGADP,"#EF4444"],["Bulan Ini",thisMonthTotal,"#F59E0B"]].forEach(function(s){
-    html+='<div class="stat-card"><div style="font-size:22px;font-weight:800;color:'+s[2]+';font-family:Arial Black,sans-serif">'+s[1]+'</div><div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:.4px">'+s[0]+'</div></div>';
+  var html='';
+
+  // Summary cards
+  html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+  [["Total",cases.length,"#94A3B8"],["GADP",totalWithGADP+"/"+cases.length,"#3B82F6"],["Top Risk",topGADP,"#EF4444"],["Bulan Ini",thisMonthTotal,"#F59E0B"]].forEach(function(s){
+    html+='<div class="stat-card"><div style="font-size:20px;font-weight:800;color:'+s[2]+'">'+s[1]+'</div><div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;text-transform:uppercase">'+s[0]+'</div></div>';
   });
   html+='</div>';
 
   if(totalWithGADP===0){
-    html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:12px"><span style="font-size:20px">💡</span><div><div style="font-size:13px;font-weight:700;color:#F59E0B;margin-bottom:2px">GADP Risk Area Belum Diisi</div><div style="font-size:11px;color:#64748B">Buka tab Kasus, edit kasus, pilih GADP Risk Area, lalu Simpan.</div></div></div>';
+    html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>💡</span><div><b style="color:#F59E0B">GADP Risk Area Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Edit kasus dan pilih GADP Risk Area untuk melihat tren.</span></div></div>';
   }
 
-  html+='<div class="card" style="margin-bottom:14px"><div class="section-title">📈 Tren Total Kasus per Bulan</div>';
-  html+=lineChart(function(m){return months[m]?months[m].total:0;},["Total"],["#F59E0B"],sortedMonths,"Jumlah Kasus per Bulan");
+  // Total trend
+  html+='<div class="card" style="margin-bottom:12px"><div class="section-title">📈 Tren Total Kasus per Bulan</div>';
+  html+=makeSVG(function(m){return months[m]?months[m].total:0;},["Total"],["#F59E0B"],sortedMonths,"Total Kasus");
   html+='</div>';
 
-  html+='<div class="card" style="margin-bottom:14px"><div class="section-title">✈️ Tren Tipe Kejadian</div>';
+  // Type trend
   var typeKeys=Object.keys(TYPE_COLORS);
-  html+=lineChart(function(m,k){return months[m]?(months[m].byType[k]||0):0;},typeKeys,Object.values(TYPE_COLORS),sortedMonths,"Tipe per Bulan");
-  html+=legend(typeKeys,Object.values(TYPE_COLORS));
+  html+='<div class="card" style="margin-bottom:12px"><div class="section-title">✈️ Tren Tipe Kejadian</div>';
+  html+=makeSVG(function(m,k){return months[m]?(months[m].byType[k]||0):0;},typeKeys,Object.values(TYPE_COLORS),sortedMonths,"Tipe per Bulan");
+  html+=lgnd(typeKeys,Object.values(TYPE_COLORS));
   html+='</div>';
 
+  // GADP trend
   if(allGADP.length>0){
-    html+='<div class="card" style="margin-bottom:14px"><div class="section-title">📋 Tren GADP Risk Area</div>';
-    html+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">';
-    html+='<button onclick="setTrendFilter('ALL')" style="background:'+(trendFilter==="ALL"?"rgba(59,130,246,0.2)":"rgba(255,255,255,0.04)")+';border:1px solid '+(trendFilter==="ALL"?"#3B82F6":"rgba(255,255,255,0.08)")+';border-radius:7px;color:'+(trendFilter==="ALL"?"#3B82F6":"#64748B")+';padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer">Semua</button>';
-    allGADP.forEach(function(g,gi){ var col=GADP_COLORS[gi%GADP_COLORS.length]; var active=trendFilter===g; html+='<button onclick="setTrendFilter(''+g+'')" style="background:'+(active?"rgba(59,130,246,0.15)":"rgba(255,255,255,0.04)")+';border:1px solid '+(active?col:"rgba(255,255,255,0.08)")+';border-radius:7px;color:'+(active?col:"#64748B")+';padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer">'+g+'</button>'; });
-    html+='</div>';
-    var dispGADP=trendFilter==="ALL"?allGADP:[trendFilter];
-    var dispColors=trendFilter==="ALL"?GADP_COLORS:[GADP_COLORS[allGADP.indexOf(trendFilter)%GADP_COLORS.length]];
-    html+=lineChart(function(m,k){return months[m]?(months[m].byGADP[k]||0):0;},dispGADP,dispColors,sortedMonths,"GADP per Bulan");
-    html+=legend(dispGADP,dispColors);
+    html+='<div class="card" style="margin-bottom:12px"><div class="section-title">📋 Tren GADP Risk Area</div>';
+    // Filter buttons using data attributes (no inline quotes issue)
+    html+='<div id="gadp-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>';
+    html+=makeSVG(function(m,k){return months[m]?(months[m].byGADP[k]||0):0;},
+      trendFilter==="ALL"?allGADP:[trendFilter],
+      trendFilter==="ALL"?GADP_COLORS:[GADP_COLORS[allGADP.indexOf(trendFilter)%GADP_COLORS.length]],
+      sortedMonths,"GADP per Bulan");
+    html+=lgnd(trendFilter==="ALL"?allGADP:[trendFilter],trendFilter==="ALL"?GADP_COLORS:[GADP_COLORS[allGADP.indexOf(trendFilter)%GADP_COLORS.length]]);
     html+='</div>';
 
+    // Distribution
     var distFilter=window._distFilter||"alltime";
-    html+='<div class="card" style="margin-bottom:14px"><div class="section-title">🎯 Distribusi GADP Risk Area</div>';
-    html+='<div style="display:flex;gap:6px;margin-bottom:14px">';
-    [["alltime","🌐 All Time"],["year","📅 Per Tahun"],["month","🗓 Per Bulan"]].forEach(function(opt){
-      var active=distFilter===opt[0];
-      html+='<button onclick="setDistFilter(''+opt[0]+'')" style="background:'+(active?"rgba(59,130,246,0.2)":"rgba(255,255,255,0.04)")+';border:1px solid '+(active?"#3B82F6":"rgba(255,255,255,0.08)")+';border-radius:7px;color:'+(active?"#3B82F6":"#64748B")+';padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer">'+opt[1]+'</button>';
-    });
-    html+='</div>';
-    function gadpBar(code,n,total,gi){ var area=GADP_AREAS.find(function(a){return a.code===code;}); var col=GADP_COLORS[gi%GADP_COLORS.length]; var pct=total>0?Math.round(n/total*100):0; return '<div style="display:flex;align-items:center;gap:10px;padding:7px 12px;background:rgba(255,255,255,0.03);border-radius:8px;border:1px solid rgba(255,255,255,0.05);margin-bottom:5px"><span style="font-size:10px;font-weight:800;color:'+col+';min-width:54px;font-family:monospace">'+code+'</span><span style="font-size:11px;color:#64748B;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(area?area.label:code)+'</span><div class="pbar-track" style="width:90px"><div class="pbar-fill" style="width:'+pct+'%;background:'+col+'"></div></div><span style="font-size:10px;font-weight:700;color:'+col+';min-width:48px;text-align:right">'+n+' ('+pct+'%)</span></div>'; }
+    html+='<div class="card" style="margin-bottom:12px"><div class="section-title">🎯 Distribusi GADP</div>';
+    html+='<div id="dist-filter-btns" style="display:flex;gap:6px;margin-bottom:12px"></div>';
+    function gadpBar(code,n,total,gi){ var area=GADP_AREAS.find(function(a){return a.code===code;}); var col=GADP_COLORS[gi%GADP_COLORS.length]; var pct=total>0?Math.round(n/total*100):0; return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;margin-bottom:4px"><span style="font-size:10px;font-weight:800;color:'+col+';min-width:52px;font-family:monospace">'+code+'</span><span style="font-size:10px;color:#64748B;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(area?area.label:code)+'</span><div class="pbar-track" style="width:80px"><div class="pbar-fill" style="width:'+pct+'%;background:'+col+'"></div></div><span style="font-size:10px;font-weight:700;color:'+col+';min-width:40px;text-align:right">'+n+' ('+pct+'%)</span></div>'; }
     if(distFilter==="alltime"){
       gadpSorted.forEach(function(e,i){html+=gadpBar(e[0],e[1],totalWithGADP,i);});
     } else if(distFilter==="year"){
       var byYear={}; cases.forEach(function(c){ if(!c.riskArea||!c.date||c.date.length<4)return; var y=c.date.substring(0,4); if(!byYear[y])byYear[y]={}; byYear[y][c.riskArea]=(byYear[y][c.riskArea]||0)+1; });
-      Object.keys(byYear).sort().reverse().forEach(function(y){ var yData=byYear[y]; var yTotal=Object.values(yData).reduce(function(s,v){return s+v;},0); html+='<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:800;color:#F59E0B;margin-bottom:8px">'+y+' — '+yTotal+' kasus</div>'; Object.entries(yData).sort(function(a,b){return b[1]-a[1];}).forEach(function(e,i){html+=gadpBar(e[0],e[1],yTotal,i);}); html+='</div>'; });
+      Object.keys(byYear).sort().reverse().forEach(function(y){ var yData=byYear[y]; var yTotal=Object.values(yData).reduce(function(s,v){return s+v;},0); html+='<div style="font-size:11px;font-weight:800;color:#F59E0B;margin-bottom:6px;margin-top:10px">'+y+' ('+yTotal+')</div>'; Object.entries(yData).sort(function(a,b){return b[1]-a[1];}).forEach(function(e,i){html+=gadpBar(e[0],e[1],yTotal,i);}); });
     } else {
       var byMth={}; cases.forEach(function(c){ if(!c.riskArea||!c.date||c.date.length<7)return; var ym=c.date.substring(0,7); if(!byMth[ym])byMth[ym]={}; byMth[ym][c.riskArea]=(byMth[ym][c.riskArea]||0)+1; });
-      var MNAMES=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      Object.keys(byMth).sort().reverse().forEach(function(ym){ var mData=byMth[ym]; var mTotal=Object.values(mData).reduce(function(s,v){return s+v;},0); var p=ym.split("-"); var mDisp=MNAMES[parseInt(p[1])-1]+" "+p[0]; html+='<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:800;color:#8B5CF6;margin-bottom:8px">'+mDisp+' — '+mTotal+' kasus</div>'; Object.entries(mData).sort(function(a,b){return b[1]-a[1];}).forEach(function(e,i){html+=gadpBar(e[0],e[1],mTotal,i);}); html+='</div>'; });
+      var MN=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      Object.keys(byMth).sort().reverse().forEach(function(ym){ var mData=byMth[ym]; var mTotal=Object.values(mData).reduce(function(s,v){return s+v;},0); var p=ym.split("-"); html+='<div style="font-size:11px;font-weight:800;color:#8B5CF6;margin-bottom:6px;margin-top:10px">'+MN[parseInt(p[1])-1]+" "+p[0]+' ('+mTotal+')</div>'; Object.entries(mData).sort(function(a,b){return b[1]-a[1];}).forEach(function(e,i){html+=gadpBar(e[0],e[1],mTotal,i);}); });
     }
     html+='</div>';
   }
+
   el.innerHTML=html;
+
+  // Add filter buttons after render (using event delegation - no inline quotes)
+  var gadpBtns=document.getElementById("gadp-filter-btns");
+  if(gadpBtns){
+    var allBtn=document.createElement("button");
+    allBtn.textContent="Semua"; allBtn.dataset.filter="ALL";
+    allBtn.style.cssText="background:"+(trendFilter==="ALL"?"rgba(59,130,246,0.2)":"rgba(255,255,255,0.04)")+";border:1px solid "+(trendFilter==="ALL"?"#3B82F6":"rgba(255,255,255,0.08)")+";border-radius:7px;color:"+(trendFilter==="ALL"?"#3B82F6":"#64748B")+";padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer";
+    gadpBtns.appendChild(allBtn);
+    allGADP.forEach(function(g,gi){
+      var btn=document.createElement("button"); btn.textContent=g; btn.dataset.filter=g;
+      var col=GADP_COLORS[gi%GADP_COLORS.length]; var active=trendFilter===g;
+      btn.style.cssText="background:"+(active?"rgba(59,130,246,0.15)":"rgba(255,255,255,0.04)")+";border:1px solid "+(active?col:"rgba(255,255,255,0.08)")+";border-radius:7px;color:"+(active?col:"#64748B")+";padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer";
+      gadpBtns.appendChild(btn);
+    });
+    gadpBtns.addEventListener("click",function(e){ var btn=e.target.closest("button"); if(btn&&btn.dataset.filter){ trendFilter=btn.dataset.filter; renderTrend(); } });
+  }
+
+  var distBtns=document.getElementById("dist-filter-btns");
+  if(distBtns){
+    [["alltime","All Time"],["year","Per Tahun"],["month","Per Bulan"]].forEach(function(opt){
+      var btn=document.createElement("button"); btn.textContent=opt[1]; btn.dataset.dist=opt[0];
+      var active=(window._distFilter||"alltime")===opt[0];
+      btn.style.cssText="background:"+(active?"rgba(59,130,246,0.2)":"rgba(255,255,255,0.04)")+";border:1px solid "+(active?"#3B82F6":"rgba(255,255,255,0.08)")+";border-radius:7px;color:"+(active?"#3B82F6":"#64748B")+";padding:5px 14px;font-size:11px;font-weight:700;cursor:pointer";
+      distBtns.appendChild(btn);
+    });
+    distBtns.addEventListener("click",function(e){ var btn=e.target.closest("button"); if(btn&&btn.dataset.dist){ window._distFilter=btn.dataset.dist; renderTrend(); } });
+  }
 }
 
 // ─────────────────────────────────────────────
