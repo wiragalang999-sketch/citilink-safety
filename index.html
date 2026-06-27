@@ -1544,13 +1544,18 @@ function renderTrend(){
     keys.forEach(function(k,ki){
       var col=colors[ki%colors.length];
       var pts=xLabels.map(function(m,mi){ return {x:PL+mi*colW+colW/2,y:PT+cH-((getData(m,k)||0)/maxV)*cH,v:getData(m,k)||0}; });
+      // Skip if all values are 0
+      var hasData=pts.some(function(p){return p.v>0;});
+      if(!hasData) return;
       if(pts.length>1){
         var ln="M"+pts[0].x+","+pts[0].y; pts.slice(1).forEach(function(p){ln+=" L"+p.x+","+p.y;});
         s+='<path d="'+ln+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linecap="round"/>';
       }
       pts.forEach(function(p){
-        s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+col+'" stroke="#080E1A" stroke-width="1.5"/>';
-        if(p.v>0) s+='<text x="'+p.x+'" y="'+(p.y-7)+'" fill="'+col+'" font-size="8" text-anchor="middle" font-weight="700">'+p.v+'</text>';
+        if(p.v>0){
+          s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+col+'" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>';
+          s+='<text x="'+p.x+'" y="'+(p.y-7)+'" fill="'+col+'" font-size="8" text-anchor="middle" font-weight="700">'+p.v+'</text>';
+        }
       });
     });
     xLabels.forEach(function(m,mi){ s+='<text x="'+(PL+mi*colW+colW/2)+'" y="'+(H-4)+'" fill="#475569" font-size="8" text-anchor="middle">'+m.substring(2)+'</text>'; });
