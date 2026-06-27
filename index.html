@@ -1174,51 +1174,103 @@ function setStatus(caseId,status){
 }
 
 // ── Evidence Tab ──────────────────────────────
+var EVIDENCE_TYPES=["Flight Data Recorder (FDR)","Cockpit Voice Recorder (CVR)","ATC Recording","Crew Statement","Maintenance Record","Weather Report","NOTAM","CCTV/Video","Photograph","Airport/ATC Report","Aircraft Technical Log","Other"];
+var EVIDENCE_STATUS=["Diterima","Pending","Tidak Tersedia"];
+
 function renderEvidenceTab(c){
   const evs=c.evidence||[];
-  let listHtml=evs.length===0?`<div style="text-align:center;color:#475569;padding:16px 0;font-size:13px">Belum ada evidence.</div>`
-  :evs.map((f,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;border:1px solid rgba(255,255,255,0.07);margin-bottom:8px">
-    ${f.dataUrl?`<img src="${f.dataUrl}" style="width:36px;height:36px;border-radius:6px;object-fit:cover;flex-shrink:0">`:
-    `<div style="width:36px;height:36px;border-radius:6px;background:rgba(59,130,246,0.15);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${f.name?.endsWith(".pdf")?"📄":"📎"}</div>`}
-    <div style="flex:1;min-width:0">
-      <div style="font-size:12px;color:#E2E8F0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(f.name)}</div>
-      <div style="font-size:10px;color:#64748B">${f.size?(f.size/1024).toFixed(1)+" KB":""} · ${esc(f.uploadedAt)}</div>
+  const listHtml=evs.length===0
+    ?`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">Belum ada evidence yang dicatat.</div>`
+    :evs.map((e,i)=>`
+  <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:8px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-size:11px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:5px;padding:2px 8px">${esc(e.type||"")}</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:5px;font-weight:700;background:${e.status==="Diterima"?"rgba(16,185,129,0.1)":e.status==="Pending"?"rgba(245,158,11,0.1)":"rgba(239,68,68,0.1)"};color:${e.status==="Diterima"?"#10B981":e.status==="Pending"?"#F59E0B":"#EF4444"};border:1px solid ${e.status==="Diterima"?"rgba(16,185,129,0.2)":e.status==="Pending"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)"}">${esc(e.status||"")}</span>
+        </div>
+        <div style="font-size:12px;color:#E2E8F0;font-weight:600;margin-bottom:3px">${esc(e.name||"")}</div>
+        ${e.description?`<div style="font-size:11px;color:#94A3B8;margin-bottom:3px">${esc(e.description)}</div>`:""}
+        <div style="font-size:10px;color:#475569">📅 Diterima: ${esc(e.receivedAt||"-")} · 👤 ${esc(e.receivedBy||"-")}</div>
+      </div>
+      <button onclick="deleteEvidence('${esc(c.id)}',${i})" style="background:none;border:none;color:#EF4444;font-size:16px;padding:0 4px;cursor:pointer;flex-shrink:0" title="Hapus">×</button>
     </div>
-    <button onclick="deleteEvidence('${esc(c.id)}',${i})" style="background:none;border:none;color:#EF4444;font-size:16px;padding:0 4px">×</button>
   </div>`).join("");
 
   return `
-  <div style="border:2px dashed rgba(245,158,11,0.3);border-radius:12px;padding:24px 20px;text-align:center;margin-bottom:14px;cursor:pointer;background:rgba(245,158,11,0.03)" onclick="document.getElementById('ev-input').click()" ondragover="event.preventDefault()" ondrop="handleDrop(event,'${esc(c.id)}')">
-    <div style="font-size:28px;margin-bottom:6px">📁</div>
-    <div style="font-size:13px;color:#94A3B8;font-weight:600">Klik atau drag & drop file di sini</div>
-    <input id="ev-input" type="file" multiple accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style="display:none" onchange="handleEvidenceUpload(event,'${esc(c.id)}')">
+  <div style="margin-bottom:14px">
+    <button onclick="toggleEvidenceForm('${esc(c.id)}')" id="ev-add-btn" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:#F59E0B;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%">＋ Tambah Evidence</button>
+  </div>
+  <div id="ev-form-wrap" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:14px">
+    <div style="font-size:12px;font-weight:700;color:#F59E0B;margin-bottom:12px">📋 Catat Evidence Baru</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">JENIS EVIDENCE *</div>
+        <select id="ev-type" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px">
+          <option value="">-- Pilih Jenis --</option>
+          ${EVIDENCE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">STATUS *</div>
+        <select id="ev-status" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px">
+          ${EVIDENCE_STATUS.map(s=>`<option value="${s}">${s}</option>`).join("")}
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">NAMA / REFERENSI DOKUMEN *</div>
+      <input id="ev-name" type="text" placeholder="cth: FDR Readout PK-GLQ, Crew Statement Captain Ahmad" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box">
+    </div>
+    <div style="margin-bottom:10px">
+      <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DESKRIPSI</div>
+      <textarea id="ev-desc" rows="2" placeholder="Keterangan singkat isi/kondisi evidence..." style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;resize:vertical;box-sizing:border-box"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div>
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">TANGGAL DITERIMA</div>
+        <input id="ev-date" type="date" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box" value="${today()}">
+      </div>
+      <div>
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DITERIMA OLEH</div>
+        <input id="ev-by" type="text" placeholder="Nama investigator" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button onclick="saveEvidence('${esc(c.id)}')" style="flex:1;background:#F59E0B;border:none;border-radius:8px;color:#000;padding:8px;font-size:12px;font-weight:700;cursor:pointer">💾 Simpan Evidence</button>
+      <button onclick="toggleEvidenceForm('${esc(c.id)}')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#64748B;padding:8px 14px;font-size:12px;cursor:pointer">Batal</button>
+    </div>
   </div>
   ${listHtml}`;
 }
-async function handleEvidenceUpload(event, caseId){
-  const c=getCase(caseId);if(!c)return;
-  const newFiles=[];
-  for(const f of Array.from(event.target.files)){
-    const entry={name:f.name,size:f.size,type:f.type,uploadedAt:today(),dataUrl:null};
-    if(f.type.startsWith("image/")) entry.dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});
-    newFiles.push(entry);
+
+function toggleEvidenceForm(caseId){
+  const wrap=document.getElementById("ev-form-wrap");
+  if(!wrap)return;
+  const show=wrap.style.display==="none";
+  wrap.style.display=show?"block":"none";
+  if(show){
+    document.getElementById("ev-name")&&document.getElementById("ev-name").focus();
   }
-  updateCase(caseId,{evidence:[...(c.evidence||[]),...newFiles]});
+}
+
+function saveEvidence(caseId){
+  const type=(document.getElementById("ev-type")||{}).value||"";
+  const name=(document.getElementById("ev-name")||{}).value||"";
+  const status=(document.getElementById("ev-status")||{}).value||"Diterima";
+  const description=(document.getElementById("ev-desc")||{}).value||"";
+  const receivedAt=(document.getElementById("ev-date")||{}).value||today();
+  const receivedBy=(document.getElementById("ev-by")||{}).value||"";
+  if(!type){alert("Pilih jenis evidence terlebih dahulu.");return;}
+  if(!name.trim()){alert("Nama/referensi dokumen wajib diisi.");return;}
+  const c=getCase(caseId);if(!c)return;
+  const entry={type,name:name.trim(),status,description:description.trim(),receivedAt,receivedBy:receivedBy.trim(),addedAt:today()};
+  updateCase(caseId,{evidence:[...(c.evidence||[]),entry]});
   setTab("evidence");
 }
-async function handleDrop(event, caseId){
-  event.preventDefault();
-  const c=getCase(caseId);if(!c)return;
-  const newFiles=[];
-  for(const f of Array.from(event.dataTransfer.files)){
-    const entry={name:f.name,size:f.size,type:f.type,uploadedAt:today(),dataUrl:null};
-    if(f.type.startsWith("image/")) entry.dataUrl=await new Promise(res=>{const r=new FileReader();r.onload=e=>res(e.target.result);r.readAsDataURL(f);});
-    newFiles.push(entry);
-  }
-  updateCase(caseId,{evidence:[...(c.evidence||[]),...newFiles]});
-  setTab("evidence");
-}
+
 function deleteEvidence(caseId,idx){
+  if(!confirm("Hapus evidence ini?"))return;
   const c=getCase(caseId);if(!c)return;
   const ev=[...(c.evidence||[])];ev.splice(idx,1);
   updateCase(caseId,{evidence:ev});
