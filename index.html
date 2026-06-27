@@ -16,6 +16,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;background:#080E1A;color:#F1F5F9;font-family:'DM Sans',Arial,sans-serif}
+html:has(body.light-mode){background:#F0F4F8}
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.2);border-radius:4px}
 input,select,textarea{font-family:'DM Sans',Arial,sans-serif;color-scheme:dark;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none;width:100%;box-sizing:border-box;resize:vertical}
@@ -46,6 +47,8 @@ button{cursor:pointer;font-family:'DM Sans',Arial,sans-serif}
 #install-banner{display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#F59E0B,#EF4444);color:#fff;padding:12px 24px;border-radius:12px;font-size:13px;font-weight:800;cursor:pointer;z-index:9999;box-shadow:0 8px 32px rgba(245,158,11,.4);white-space:nowrap}
 
 body.light-mode{background:#F0F4F8;color:#1E293B}
+html body.light-mode{background:#F0F4F8!important}
+body.light-mode::before{content:'';position:fixed;inset:0;background:#F0F4F8;z-index:-1}
 body.light-mode #header{background:rgba(255,255,255,0.97);border-bottom:1px solid rgba(0,0,0,0.08)}
 body.light-mode #header *{color:#1E293B!important}
 body.light-mode .tab-btn{color:#475569!important;border-color:transparent!important}
@@ -62,8 +65,10 @@ body.light-mode .pbar-track{background:rgba(0,0,0,0.08)!important}
 body.light-mode .section-title{color:#334155!important}
 body.light-mode .row-hover:hover{background:rgba(0,0,0,0.03)!important}
 body.light-mode .timeline-line{background:rgba(0,0,0,0.1)!important}
-body.light-mode #view-dashboard *{color:#1E293B}
-body.light-mode #view-cases *{color:#1E293B}
+body.light-mode #main{background:#F0F4F8}
+body.light-mode #view-trend,
+body.light-mode #view-dashboard,
+body.light-mode #view-cases{background:#F0F4F8}
 /* Fix semua background gelap di light mode */
 body.light-mode [style*="background:#0D1526"],
 body.light-mode [style*="background:#0F172A"],
