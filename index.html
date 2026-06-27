@@ -1429,7 +1429,7 @@ function renderTrend(){
 
   var makeSVG=function(getData,keys,colors,xLabels,title){
     if(!xLabels||xLabels.length===0) return "";
-    var W=540,H=170,PL=36,PR=12,PT=24,PB=32;
+    var W=540,H=170,PL=36,PR=12,PT=40,PB=32;
     var cW=W-PL-PR,cH=H-PT-PB,colW=cW/Math.max(xLabels.length,1);
     var maxV=1;
     xLabels.forEach(function(m){ keys.forEach(function(k){ var v=getData(m,k)||0; if(v>maxV)maxV=v; }); });
