@@ -1547,10 +1547,14 @@ function renderTrend(){
       // Skip if all values are 0
       var hasData=pts.some(function(p){return p.v>0;});
       if(!hasData) return;
-      if(pts.length>1){
-        var ln="M"+pts[0].x+","+pts[0].y; pts.slice(1).forEach(function(p){ln+=" L"+p.x+","+p.y;});
+      // Draw line segments only between consecutive non-zero points
+      var activePts=pts.filter(function(p){return p.v>0;});
+      if(activePts.length>1){
+        var ln="M"+activePts[0].x+","+activePts[0].y;
+        activePts.slice(1).forEach(function(p){ln+=" L"+p.x+","+p.y;});
         s+='<path d="'+ln+'" fill="none" stroke="'+col+'" stroke-width="2" stroke-linecap="round"/>';
       }
+      // Draw circles and labels only on non-zero points
       pts.forEach(function(p){
         if(p.v>0){
           s+='<circle cx="'+p.x+'" cy="'+p.y+'" r="3.5" fill="'+col+'" stroke="rgba(0,0,0,0.2)" stroke-width="1.5"/>';
