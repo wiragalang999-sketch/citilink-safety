@@ -1543,7 +1543,8 @@ function renderTrend(){
     }
     keys.forEach(function(k,ki){
       var col=colors[ki%colors.length];
-      var pts=xLabels.map(function(m,mi){ return {x:PL+mi*colW+colW/2,y:PT+cH-((getData(m,k)||0)/maxV)*cH,v:getData(m,k)||0}; });
+      var offset=(ki-(keys.length-1)/2)*4; // spread overlapping points
+      var pts=xLabels.map(function(m,mi){ return {x:PL+mi*colW+colW/2+offset,y:PT+cH-((getData(m,k)||0)/maxV)*cH,v:getData(m,k)||0}; });
       // Skip if all values are 0
       var hasData=pts.some(function(p){return p.v>0;});
       if(!hasData) return;
