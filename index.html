@@ -47,15 +47,34 @@ button{cursor:pointer;font-family:'DM Sans',Arial,sans-serif}
 
 body.light-mode{background:#F0F4F8;color:#1E293B}
 body.light-mode #header{background:rgba(255,255,255,0.97);border-bottom:1px solid rgba(0,0,0,0.08)}
+body.light-mode #header *{color:#1E293B!important}
+body.light-mode .tab-btn{color:#475569!important;border-color:transparent!important}
 body.light-mode .card{background:#FFF;border:1px solid rgba(0,0,0,0.08);box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+body.light-mode .card *{color:#1E293B}
 body.light-mode .stat-card{background:#FFF;border:1px solid rgba(0,0,0,0.08)}
+body.light-mode .stat-card *{color:#1E293B!important}
 body.light-mode .modal-box{background:#FFF;border:1px solid rgba(0,0,0,0.1)}
+body.light-mode .modal-box *{color:#1E293B}
 body.light-mode .modal-overlay{background:rgba(0,0,0,0.5)}
 body.light-mode input,body.light-mode select,body.light-mode textarea{background:#F8FAFC;border:1px solid rgba(0,0,0,0.15);color:#1E293B}
 body.light-mode option{background:#FFF;color:#1E293B}
-body.light-mode .pbar-track{background:rgba(0,0,0,0.08)}
-body.light-mode .section-title{color:#475569}
+body.light-mode .pbar-track{background:rgba(0,0,0,0.08)!important}
+body.light-mode .section-title{color:#334155!important}
 body.light-mode .row-hover:hover{background:rgba(0,0,0,0.03)!important}
+body.light-mode #view-dashboard *{color:#1E293B}
+body.light-mode #view-cases *{color:#1E293B}
+body.light-mode [style*="color:#E2E8F0"]{color:#1E293B!important}
+body.light-mode [style*="color:#F1F5F9"]{color:#0F172A!important}
+body.light-mode [style*="color:#CBD5E1"]{color:#334155!important}
+body.light-mode [style*="color:#94A3B8"]{color:#64748B!important}
+body.light-mode [style*="color:#475569"]{color:#334155!important}
+body.light-mode [style*="background:rgba(255,255,255,0.04)"]{background:rgba(0,0,0,0.04)!important;border-color:rgba(0,0,0,0.08)!important}
+body.light-mode [style*="background:rgba(255,255,255,0.06)"]{background:rgba(0,0,0,0.05)!important}
+body.light-mode [style*="background:rgba(255,255,255,0.08)"]{background:rgba(0,0,0,0.06)!important}
+body.light-mode [style*="background:#0F172A"]{background:#F8FAFC!important}
+body.light-mode [style*="background:#080E1A"]{background:#F1F5F9!important}
+body.light-mode svg text{fill:#334155!important}
+body.light-mode svg line{stroke:rgba(0,0,0,0.08)!important}
 
 #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#000000 0%,#0a1a0a 30%,#0d2b0d 60%,#001a00 100%);display:flex;align-items:center;justify-content:center;z-index:9999;overflow:hidden}
 #login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,166,81,0.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 50%,rgba(255,215,0,0.08) 0%,transparent 50%);pointer-events:none}
@@ -194,6 +213,7 @@ function toggleTheme(){
   localStorage.setItem("ci_theme",isLight?"light":"dark");
   var btn=document.getElementById("theme-toggle");
   if(btn) btn.textContent=isLight?"☀️":"🌙";
+  renderAll();
 }
 function initTheme(){
   if(localStorage.getItem("ci_theme")==="light"){
@@ -202,6 +222,16 @@ function initTheme(){
     if(btn) btn.textContent="☀️";
   }
 }
+
+// ── THEME COLOR HELPERS ────────────────────────────────────────────────────────
+function isLight(){ return document.body.classList.contains("light-mode"); }
+function tc(dark,light){ return isLight()?light:dark; }
+// Common color shortcuts
+function cPrimary(){ return tc("#E2E8F0","#1E293B"); }   // main text
+function cSecond(){ return tc("#94A3B8","#64748B"); }    // secondary text
+function cMuted(){  return tc("#64748B","#475569"); }    // muted text
+function cCard(){   return tc("rgba(255,255,255,0.02)","rgba(0,0,0,0.02)"); }
+function cBorder(){ return tc("rgba(255,255,255,0.07)","rgba(0,0,0,0.08)"); }
 
 // ── DUE DATE NOTIFICATIONS ─────────────────────────────────────────────────────
 var _duePopupOpen=false;
@@ -237,7 +267,7 @@ function checkDueDates(){
         d+='<span style="font-size:10px;font-weight:800;color:'+col+';padding:2px 7px;border-radius:4px">'+lbl+'</span>';
         d+=(a.isRec?'<span style="font-size:9px;color:#8B5CF6;font-weight:700">Rec</span>':'<span style="font-size:9px;color:#F59E0B;font-weight:700">Mit</span>');
         d+='</div>';
-        d+='<div style="font-size:11px;color:#E2E8F0;font-weight:600;margin-bottom:2px">'+esc(a.caseTitle)+'</div>';
+        d+='<div style="font-size:11px;color:"+cPrimary()+";font-weight:600;margin-bottom:2px">'+esc(a.caseTitle)+'</div>';
         d+='<div style="font-size:10px;color:#64748B">'+esc(a.action.substring(0,55))+(a.action.length>55?'...':'')+'</div>';
         d+='<div style="font-size:9px;color:#475569;margin-top:3px">Due: '+a.dueDate+'</div></div>';
         return d;
@@ -522,8 +552,8 @@ function renderDashboard(){
   if(cases.length===0){
     el.innerHTML=`<div style="text-align:center;padding:80px 20px">
       <div style="font-size:64px;margin-bottom:16px">✈️</div>
-      <h3 style="font-size:20px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif;margin-bottom:8px">Belum Ada Kasus Investigasi</h3>
-      <p style="color:#64748B;font-size:13px;max-width:320px;margin:0 auto 22px;line-height:1.6">Data tersimpan permanen di perangkat ini. Mulai dengan membuka kasus pertama.</p>
+      <h3 style="font-size:20px;font-weight:800;color:${cPrimary()};font-family:Arial Black,sans-serif;margin-bottom:8px">Belum Ada Kasus Investigasi</h3>
+      <p style="color:${cMuted()};font-size:13px;max-width:320px;margin:0 auto 22px;line-height:1.6">Data tersimpan permanen di perangkat ini. Mulai dengan membuka kasus pertama.</p>
       <button class="btn-primary" onclick="openNewCase()">+ Buka Investigasi Baru</button>
     </div>`;
     return;
@@ -540,11 +570,11 @@ function renderDashboard(){
       const rv=c.risk?.riskIdx!=null&&c.risk?.barrierIdx!=null?ERC_MATRIX[c.risk.riskIdx][c.risk.barrierIdx]:null;
       const ei=rv?ercColor(rv):null;
       const sc=STATUS_CFG[c.status]||STATUS_CFG["Data Collection"];
-      html+=`<div class="row-hover" onclick="openCase('${esc(c.id)}')" style="cursor:pointer;padding:12px 14px;background:rgba(255,255,255,0.02);border-radius:10px;border:1px solid ${od?"rgba(239,68,68,0.2)":"rgba(255,255,255,0.05)"};margin-bottom:8px">
+      html+=`<div class="row-hover" onclick="openCase('${esc(c.id)}')" style="cursor:pointer;padding:12px 14px;background:${cCard()};border-radius:10px;border:1px solid ${od?"rgba(239,68,68,0.2)":cBorder()};margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;gap:8px;flex-wrap:wrap">
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <div style="width:7px;height:7px;border-radius:50%;background:${SEV_COLOR[c.severity]||"#94A3B8"};flex-shrink:0"></div>
-            <span style="font-size:13px;font-weight:700;color:#E2E8F0">${esc(c.title)}</span>
+            <span style="font-size:13px;font-weight:700;color:${cPrimary()}">${esc(c.title)}</span>
             ${od>0?`<span style="font-size:10px;background:rgba(239,68,68,0.15);color:#EF4444;border:1px solid rgba(239,68,68,0.3);border-radius:5px;padding:1px 6px;font-weight:700">⚠️${od}</span>`:""}
             ${rv?`<span style="font-size:10px;background:${ei.color}18;color:${ei.color};border:1px solid ${ei.color}40;border-radius:5px;padding:1px 7px;font-weight:700">ERC ${rv}</span>`:""}
           </div>
@@ -554,7 +584,7 @@ function renderDashboard(){
           <div style="flex:1">${phaseBar(c.phase)}</div>
           <span style="font-size:11px;font-weight:700;color:#F59E0B;min-width:32px;text-align:right">${c.progress}%</span>
         </div>
-        <div style="font-size:10px;color:#64748B;margin-top:5px;display:flex;gap:10px;flex-wrap:wrap">
+        <div style="font-size:10px;color:${cMuted()};margin-top:5px;display:flex;gap:10px;flex-wrap:wrap">
           <span>${esc(c.phase)}</span><span>✈ ${esc(c.aircraft||"—")}</span><span>👤 ${esc(c.investigator||"Unassigned")}</span>
           ${(c.mitigations||[]).length?`<span>🛡${(c.mitigations||[]).length}</span>`:""}
           ${(c.safetyRecs||[]).length?`<span>📨${(c.safetyRecs||[]).length}</span>`:""}
@@ -658,7 +688,7 @@ function renderCases(){
         <div style="width:7px;height:7px;border-radius:50%;background:${SEV_COLOR[c.severity]||"#94A3B8"};flex-shrink:0"></div>
         <div style="font-size:10px;font-family:'DM Mono',monospace;color:#64748B;min-width:100px">${esc(c.id)}</div>
         <div style="flex:1">
-          <div style="font-size:13px;font-weight:700;color:#E2E8F0;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <div style="font-size:13px;font-weight:700;color:${cPrimary()};display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             ${esc(c.title)}
             ${od>0?`<span style="font-size:9px;background:rgba(239,68,68,0.15);color:#EF4444;border:1px solid rgba(239,68,68,0.3);border-radius:4px;padding:1px 5px;font-weight:700">⚠️${od}</span>`:""}
             ${rv?`<span style="font-size:9px;background:${ei.color}18;color:${ei.color};border:1px solid ${ei.color}40;border-radius:4px;padding:1px 5px;font-weight:700">ERC${rv}</span>`:""}
@@ -717,7 +747,7 @@ function renderCaseModal(){
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
       <div>
         <div style="font-size:10px;color:#64748B;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:3px;font-family:'DM Mono',monospace">${esc(c.id)}</div>
-        <h2 style="margin:0;font-size:17px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif;line-height:1.3;max-width:520px">${esc(c.title)}</h2>
+        <h2 style="margin:0;font-size:17px;font-weight:800;color:${cPrimary()};font-family:Arial Black,sans-serif;line-height:1.3;max-width:520px">${esc(c.title)}</h2>
         <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center">
           ${badge(c.status,sc)}
           <span style="font-size:11px;color:${SEV_COLOR[c.severity]||"#94A3B8"};font-weight:700">● ${esc(c.severity)}</span>
@@ -763,7 +793,7 @@ function renderDetailTab(c){
   fields.forEach(([k,v])=>{
     h+=`<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:10px 14px">
       <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px">${k}</div>
-      <div style="font-size:13px;color:#CBD5E1;font-weight:600">${esc(v)}</div>
+      <div style="font-size:13px;color:${cPrimary()};font-weight:600">${esc(v)}</div>
     </div>`;
   });
   h+=`</div>
@@ -898,7 +928,7 @@ function renderRiskTab(c){
     </div>
     <div style="background:rgba(0,0,0,0.25);border-radius:8px;padding:10px 14px">
       <div style="font-size:10px;font-weight:800;color:${si.color};text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px">Required Action</div>
-      <div style="font-size:12px;color:#CBD5E1;line-height:1.6">${si.action}</div>
+      <div style="font-size:12px;color:${cPrimary()};line-height:1.6">${si.action}</div>
     </div>
   </div>`:`
   <div style="background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;margin-bottom:16px;text-align:center">
@@ -956,7 +986,7 @@ function renderTimelineTab(c){
         </div>
         <div style="flex:1;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px">
           <span style="font-size:11px;font-family:'DM Mono',monospace;color:${col};font-weight:700;min-width:70px">${esc(e.time)}</span>
-          <span style="flex:1;font-size:13px;color:#E2E8F0">${esc(e.description)}</span>
+          <span style="flex:1;font-size:13px;color:${cPrimary()}">${esc(e.description)}</span>
           <span style="font-size:10px;background:${col}18;color:${col};border-radius:5px;padding:2px 7px;font-weight:700">${esc(e.type)}</span>
           <button onclick="deleteTimelineEvent('${esc(c.id)}','${e.id}')" style="background:none;border:none;color:#EF4444;font-size:14px;padding:0 4px">×</button>
         </div>
@@ -1006,7 +1036,7 @@ function renderMitigationTab(c){
       const od=isOverdue(m.dueDate)&&m.status!=="Closed";
       listHtml+=`<div style="background:${od?"rgba(239,68,68,0.06)":"rgba(255,255,255,0.03)"};border:1px solid ${od?"rgba(239,68,68,0.3)":"rgba(255,255,255,0.07)"};border-radius:10px;padding:12px 14px;margin-bottom:8px">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px">
-          <div style="font-size:13px;color:#E2E8F0;font-weight:600;line-height:1.5;flex:1">${esc(m.action)}</div>
+          <div style="font-size:13px;color:${cPrimary()};font-weight:600;line-height:1.5;flex:1">${esc(m.action)}</div>
           ${badge(m.status,cfg)}
         </div>
         <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
@@ -1072,7 +1102,7 @@ function renderSafetyRecTab(c){
       ${badge(r.priority,PRIOS[r.priority]||PRIOS.Routine)}
       ${badge(r.status,REC_ST[r.status]||REC_ST.Open)}
     </div>
-    <div style="font-size:13px;color:#E2E8F0;font-weight:600;line-height:1.5;margin-bottom:6px">${esc(r.recommendation)}</div>
+    <div style="font-size:13px;color:${cPrimary()};font-weight:600;line-height:1.5;margin-bottom:6px">${esc(r.recommendation)}</div>
     <div style="font-size:11px;color:#64748B;margin-bottom:8px">📨 ${esc(r.addressedTo||"—")}${r.targetDate?` · 📅 ${r.targetDate}`:""}</div>
     ${r.response?`<div style="font-size:11px;color:#64748B;font-style:italic;margin-bottom:8px">Response: ${esc(r.response)}</div>`:""}
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
@@ -1132,7 +1162,7 @@ function renderLessonsTab(c){
   </div>
   ${c.lessons?.trim()?`<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:14px">
     <div style="font-size:10px;font-weight:800;color:#64748B;text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px">Preview (as PDF)</div>
-    <div style="font-size:13px;color:#CBD5E1;line-height:1.8;white-space:pre-wrap">${esc(c.lessons)}</div>
+    <div style="font-size:13px;color:${cPrimary()};line-height:1.8;white-space:pre-wrap">${esc(c.lessons)}</div>
   </div>`:""}`;
 }
 function updateLessons(caseId,val){
@@ -1189,7 +1219,7 @@ function renderEvidenceTab(c){
           <span style="font-size:11px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:5px;padding:2px 8px">${esc(e.type||"")}</span>
           <span style="font-size:10px;padding:2px 8px;border-radius:5px;font-weight:700;background:${e.status==="Diterima"?"rgba(16,185,129,0.1)":e.status==="Pending"?"rgba(245,158,11,0.1)":"rgba(239,68,68,0.1)"};color:${e.status==="Diterima"?"#10B981":e.status==="Pending"?"#F59E0B":"#EF4444"};border:1px solid ${e.status==="Diterima"?"rgba(16,185,129,0.2)":e.status==="Pending"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)"}">${esc(e.status||"")}</span>
         </div>
-        <div style="font-size:12px;color:#E2E8F0;font-weight:600;margin-bottom:3px">${esc(e.name||"")}</div>
+        <div style="font-size:12px;color:${cPrimary()};font-weight:600;margin-bottom:3px">${esc(e.name||"")}</div>
         ${e.description?`<div style="font-size:11px;color:#94A3B8;margin-bottom:3px">${esc(e.description)}</div>`:""}
         <div style="font-size:10px;color:#475569">📅 Diterima: ${esc(e.receivedAt||"-")} · 👤 ${esc(e.receivedBy||"-")}</div>
       </div>
