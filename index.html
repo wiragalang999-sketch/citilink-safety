@@ -1537,10 +1537,15 @@ function renderTrend(){
     var s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block">';
     s+='<text x="'+(W/2)+'" y="16" fill="#64748B" font-size="10" font-weight="700" text-anchor="middle">'+title+'</text>';
     var gridColor=document.body.classList.contains("light-mode")?"rgba(0,0,0,0.08)":"rgba(255,255,255,0.08)";
+    var shownLabels={};
     for(var g=0;g<=4;g++){
       var gy=PT+cH-(g/4)*cH;
+      var labelVal=Math.round((g/4)*maxV);
       s+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="'+gridColor+'" stroke-width="1"/>';
-      s+='<text x="'+(PL-3)+'" y="'+(gy+3)+'" fill="#64748B" font-size="8" text-anchor="end">'+Math.round((g/4)*maxV)+'</text>';
+      if(!shownLabels[labelVal]){
+        s+='<text x="'+(PL-3)+'" y="'+(gy+3)+'" fill="#64748B" font-size="8" text-anchor="end">'+labelVal+'</text>';
+        shownLabels[labelVal]=true;
+      }
     }
     keys.forEach(function(k,ki){
       var col=colors[ki%colors.length];
