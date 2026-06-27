@@ -327,6 +327,11 @@ function startFirestoreSync(){
     cases.sort(function(a,b){return (b.date||"").localeCompare(a.date||"");});
     try{localStorage.setItem("citilink_safety_v1",JSON.stringify(cases));}catch(e){}
     showSyncStatus("✅ Synced · "+cases.length+" kasus","#10B981");
+    // Re-sync view display state before rendering
+    ["dashboard","trend","cases"].forEach(function(n){
+      var el=document.getElementById("view-"+n);
+      if(el) el.style.display=(currentView===n)?"block":"none";
+    });
     renderAll();
     if(selectedCaseId) renderCaseModal();
   },function(err){console.warn("Firestore error:",err);showSyncStatus("⚠️ Offline","#F59E0B");});
@@ -1394,10 +1399,13 @@ function setTrendFilter(f){trendFilter=f;renderTrend();}
 function renderTrend(){
   var el=document.getElementById("view-trend");
   if(!el) return;
+  // Ensure view is visible
+  if(currentView==="trend"&&el.style.display==="none") el.style.display="block";
   if(!cases||cases.length===0){
     el.innerHTML='<div style="text-align:center;padding:60px 20px"><div style="font-size:48px;margin-bottom:14px">📈</div><p style="color:#64748B">Belum ada data kasus.</p></div>';
     return;
   }
+  try {
   var months={};
   var gadpCount={};
   cases.forEach(function(c){
@@ -1419,7 +1427,7 @@ function renderTrend(){
   var GADP_COLORS=["#3B82F6","#8B5CF6","#EC4899","#10B981","#F59E0B","#EF4444","#06B6D4","#84CC16","#F97316","#6366F1"];
   var TYPE_COLORS={"Accident":"#EF4444","Serious Incident":"#F97316","Incident":"#EAB308","Precursor":"#22C55E"};
 
-  function makeSVG(getData,keys,colors,xLabels,title){
+  var makeSVG=function(getData,keys,colors,xLabels,title){
     if(!xLabels||xLabels.length===0) return "";
     var W=540,H=170,PL=36,PR=12,PT=24,PB=32;
     var cW=W-PL-PR,cH=H-PT-PB,colW=cW/Math.max(xLabels.length,1);
@@ -1447,9 +1455,9 @@ function renderTrend(){
     xLabels.forEach(function(m,mi){ s+='<text x="'+(PL+mi*colW+colW/2)+'" y="'+(H-4)+'" fill="#475569" font-size="8" text-anchor="middle">'+m.substring(2)+'</text>'; });
     s+='</svg>';
     return s;
-  }
+  };
 
-  function lgnd(keys,colors){ return '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+keys.map(function(k,i){ return '<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:'+colors[i%colors.length]+'"></div><span style="font-size:10px;color:#94A3B8">'+k+'</span></div>'; }).join('')+'</div>'; }
+  var lgnd=function(keys,colors){ return '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">'+keys.map(function(k,i){ return '<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:'+colors[i%colors.length]+'"></div><span style="font-size:10px;color:#94A3B8">'+k+'</span></div>'; }).join('')+'</div>'; };
 
   var html='';
 
@@ -1462,6 +1470,12 @@ function renderTrend(){
 
   if(totalWithGADP===0){
     html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>💡</span><div><b style="color:#F59E0B">GADP Risk Area Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Edit kasus dan pilih GADP Risk Area untuk melihat tren.</span></div></div>';
+  }
+
+  if(sortedMonths.length===0){
+    html+='<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>📅</span><div><b style="color:#3B82F6">Tanggal Kasus Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Pastikan setiap kasus memiliki tanggal kejadian untuk melihat grafik tren.</span></div></div>';
+    el.innerHTML=html;
+    return;
   }
 
   // Total trend
@@ -1533,6 +1547,10 @@ function renderTrend(){
       distBtns.appendChild(btn);
     });
     distBtns.addEventListener("click",function(e){ var btn=e.target.closest("button"); if(btn&&btn.dataset.dist){ window._distFilter=btn.dataset.dist; renderTrend(); } });
+  }
+  } catch(e) {
+    console.error("renderTrend error:", e);
+    el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#EF4444"><div style="font-size:32px;margin-bottom:10px">⚠️</div><p style="font-size:13px">Terjadi error saat memuat tren: '+e.message+'</p><button class="btn-ghost" onclick="renderTrend()" style="margin-top:12px">🔄 Coba Lagi</button></div>';
   }
 }
 
