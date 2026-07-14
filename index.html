@@ -13,6 +13,7 @@
 <meta name="theme-color" content="#00A651">
 <title>CI — Citilink Safety Investigation</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<style>.leaflet-popup{z-index:99999!important}.leaflet-popup-content-wrapper{border-radius:12px!important;box-shadow:0 8px 32px rgba(0,0,0,0.25)!important}.leaflet-container{font-family:'DM Sans',Arial,sans-serif!important}</style>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800;900&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
@@ -1362,9 +1363,9 @@ function renderFormModal(){
   document.getElementById("modal-form").innerHTML=`<div class="modal-box" style="max-width:580px">
     <button onclick="closeFormModal()" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.07);border:none;color:#94A3B8;width:30px;height:30px;border-radius:8px;font-size:16px">✕</button>
     <h2 style="margin:0 0 20px;font-size:18px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif">${isEdit?"✏️ Edit Case":"✈️ Open New Investigation"}</h2>
-    <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Judul / Deskripsi Singkat *</label><input id="f-title" value="${v("title")}" placeholder="e.g. Hard Landing – CGK Runway 25R"></div>
+    <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Title / Brief Description *</label><input id="f-title" value="${v("title")}" placeholder="e.g. Hard Landing – CGK Runway 25R"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Tipe Kejadian</label>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Occurrence Type</label>
         <select id="f-type">${EVENT_TYPES.map(t=>`<option${t===(c?.type||"Incident")?" selected":""}>${t}</option>`).join("")}</select>
       </div>
       <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Severity</label>
@@ -1376,35 +1377,34 @@ function renderFormModal(){
       <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Flight Number</label><input id="f-flt" value="${v("flightNo")}" placeholder="QG 123"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Location / Airport</label><input id="f-loc" value="${v("location")}" placeholder="CGK / Bandara Soekarno-Hatta"></div>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Location / Airport</label><input id="f-loc" value="${v("location")}" placeholder="CGK / Soekarno-Hatta"></div>
       <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Date of Occurrence</label><input id="f-date" type="date" value="${v("date",today())}"></div>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:13px">
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">📍 Latitude</label><input id="f-lat" type="number" step="any" value="${v("lat")}" placeholder="-6.1234"></div>
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">📍 Longitude</label><input id="f-lng" type="number" step="any" value="${v("lng")}" placeholder="106.6543"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:8px">
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">📍 Latitude</label><input id="f-lat" type="number" step="any" value="${c?.lat||""}" placeholder="-6.1234"></div>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">📍 Longitude</label><input id="f-lng" type="number" step="any" value="${c?.lng||""}" placeholder="106.6543"></div>
     </div>
     <div style="margin-bottom:13px">
-      <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">📌 Or Click Map to Set Location</div>
-      <div id="form-map" style="height:200px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);overflow:hidden"></div>
-    </div>
+      <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">📌 Click map to set location (or drag marker)</div>
+      <div id="form-map" style="height:180px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);overflow:hidden;z-index:1"></div>
     </div>
     <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Lead Investigator</label><input id="f-inv" value="${v("investigator")}" placeholder="Investigator name"></div>
     <div style="margin-bottom:13px">
-      <label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">ICAO GADP Risk Area</label>
+      <label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">ICAO Risk Area</label>
       <select id="f-riskarea" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none;box-sizing:border-box">
         <option value="">— Select Risk Area —</option>
         ${GADP_AREAS.map(a=>`<option value="${esc(a.code)}"${(c?.riskArea||"")===a.code?" selected":""}>[${esc(a.code)}] ${esc(a.label)}</option>`).join("")}
       </select>
     </div>
     <div style="margin-bottom:16px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Occurrence Narrative</label><textarea id="f-desc" rows="3" placeholder="Brief description of occurrence...">${v("description")}</textarea></div>
-    <button class="btn-primary" onclick="submitForm(${isEdit})" style="width:100%;padding:13px;font-size:14px;border-radius:10px">${isEdit?"Simpan Perubahan":"Buka Kasus Investigasi"}</button>
+    <button class="btn-primary" onclick="submitForm(${isEdit})" style="width:100%;padding:13px;font-size:14px;border-radius:10px">${isEdit?"✅ Save Changes":"✈️ Open Investigation Case"}</button>
   </div>`;
 }
 
 function submitForm(isEdit){
   const title=document.getElementById("f-title")?.value?.trim()||"";
   const aircraft=document.getElementById("f-ac")?.value?.trim()||"";
-  if(!title){alert("Judul wajib diisi.");return;}
+  if(!title){alert("Title is required.");return;}
   if(!aircraft){alert("Aircraft registration is required.");return;}
   const data={
     title,aircraft,
