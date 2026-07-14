@@ -156,14 +156,14 @@ try {
   </div>
   <div style="display:flex;gap:6px" id="nav-btns">
     <button class="tab-btn" id="nav-dashboard" onclick="setView('dashboard')">📊 Dashboard</button>
-    <button class="tab-btn" id="nav-trend" onclick="setView('trend')">📈 Tren Risk Area</button>
-    <button class="tab-btn" id="nav-cases" onclick="setView('cases')">📋 Kasus</button>
+    <button class="tab-btn" id="nav-trend" onclick="setView('trend')">📈 Risk Area Trend</button>
+    <button class="tab-btn" id="nav-cases" onclick="setView('cases')">📋 Cases</button>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
     <div id="sync-status" style="font-size:10px;color:#64748B;font-weight:600;white-space:nowrap">💾 Lokal</div>
     <div id="due-bell" onclick="toggleDuePopup()" title="Due Date Alerts" style="position:relative;cursor:pointer;font-size:18px;padding:4px 8px;border-radius:8px">🔔<span id="due-badge" style="position:absolute;top:-2px;right:-2px;background:#EF4444;color:#fff;font-size:9px;font-weight:800;border-radius:10px;padding:1px 5px;min-width:16px;text-align:center;display:none"></span></div>
     <button id="theme-toggle" onclick="toggleTheme()" style="background:none;border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:14px;color:#94A3B8">🌙</button>
-    <button class="btn-primary" style="padding:8px 14px;font-size:12px;border-radius:10px" onclick="openNewCase()">＋ Baru</button>
+    <button class="btn-primary" style="padding:8px 14px;font-size:12px;border-radius:10px" onclick="openNewCase()">＋ New</button>
   </div>
   <div id="due-popup" style="display:none;position:fixed;top:68px;right:20px;width:320px;background:#0D1526;border:1px solid rgba(239,68,68,0.3);border-radius:14px;padding:16px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.4)">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
@@ -187,7 +187,7 @@ try {
 <div id="modal-case" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCaseModal()"></div>
 <div id="modal-form" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeFormModal()"></div>
 
-<div id="install-banner" onclick="installPWA()">📲 Install App — Tambah ke Home Screen</div>
+<div id="install-banner" onclick="installPWA()">📲 Install App — Add to Home Screen</div>
 
 <script>
 
@@ -277,7 +277,7 @@ function checkDueDates(){
   var list=document.getElementById("due-list");
   if(list){
     if(alerts.length===0){
-      list.innerHTML='<div style="text-align:center;color:#64748B;font-size:12px;padding:16px 0">✅ Tidak ada due date mendesak</div>';
+      list.innerHTML='<div style="text-align:center;color:#64748B;font-size:12px;padding:16px 0">✅ No urgent due dates</div>';
     } else {
       list.innerHTML=alerts.sort(function(a,b){return a.diffDays-b.diffDays;}).map(function(a){
         var col=a.overdue?'#EF4444':a.diffDays<=3?'#F97316':'#F59E0B';
@@ -376,7 +376,7 @@ function startFirestoreSync(){
     cases=snap.docs.map(function(d){return d.data();});
     cases.sort(function(a,b){return (b.date||"").localeCompare(a.date||"");});
     try{localStorage.setItem("citilink_safety_v1",JSON.stringify(cases));}catch(e){}
-    showSyncStatus("✅ Synced · "+cases.length+" kasus","#10B981");
+    showSyncStatus("✅ Synced · "+cases.length+" cases","#10B981");
     // Re-sync view display state before rendering
     ["dashboard","trend","cases"].forEach(function(n){
       var el=document.getElementById("view-"+n);
@@ -549,9 +549,9 @@ function renderStats(){
   const allRecs=cases.flatMap(c=>c.safetyRecs||[]);
   const stats=[
     ["Total",cases.length,"#94A3B8"],
-    ["Aktif",cases.filter(c=>c.status!=="Closed").length,"#F59E0B"],
+    ["Active",cases.filter(c=>c.status!=="Closed").length,"#F59E0B"],
     ["High/Critical",cases.filter(c=>["Critical","High"].includes(c.severity)).length,"#EF4444"],
-    ["Selesai",cases.filter(c=>c.status==="Closed").length,"#10B981"],
+    ["Closed",cases.filter(c=>c.status==="Closed").length,"#10B981"],
     ["Mit. Overdue",allMits.filter(m=>m.status!=="Closed"&&isOverdue(m.dueDate)).length,"#EF4444"],
     ["Rec. Open",allRecs.filter(r=>r.status==="Open").length,"#8B5CF6"],
   ];
@@ -561,7 +561,7 @@ function renderStats(){
       <div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;letter-spacing:.4px;text-transform:uppercase">${l}</div>
     </div>`).join("");
   // Update cases nav label
-  document.getElementById("nav-cases").textContent="📋 Kasus"+(cases.length>0?" ("+cases.length+")":"");
+  document.getElementById("nav-cases").textContent="📋 Cases"+(cases.length>0?" ("+cases.length+")":"");
 }
 
 // ─────────────────────────────────────────────
@@ -572,18 +572,18 @@ function renderDashboard(){
   if(cases.length===0){
     el.innerHTML=`<div style="text-align:center;padding:80px 20px">
       <div style="font-size:64px;margin-bottom:16px">✈️</div>
-      <h3 style="font-size:20px;font-weight:800;color:${cPrimary()};font-family:Arial Black,sans-serif;margin-bottom:8px">Belum Ada Kasus Investigasi</h3>
-      <p style="color:${cMuted()};font-size:13px;max-width:320px;margin:0 auto 22px;line-height:1.6">Data tersimpan permanen di perangkat ini. Mulai dengan membuka kasus pertama.</p>
-      <button class="btn-primary" onclick="openNewCase()">+ Buka Investigasi Baru</button>
+      <h3 style="font-size:20px;font-weight:800;color:${cPrimary()};font-family:Arial Black,sans-serif;margin-bottom:8px">No Investigation Cases Yet</h3>
+      <p style="color:${cMuted()};font-size:13px;max-width:320px;margin:0 auto 22px;line-height:1.6">Data is permanently stored on this device. Start by opening the first case.</p>
+      <button class="btn-primary" onclick="openNewCase()">+ Open New Investigation</button>
     </div>`;
     return;
   }
   const active=cases.filter(c=>c.status!=="Closed");
   const allMits=cases.flatMap(c=>c.mitigations||[]);
   let html=`<div class="card" style="margin-bottom:18px">
-    <div class="section-title">Progress Investigasi Aktif</div>`;
+    <div class="section-title">Active Investigation Progress</div>`;
   if(active.length===0){
-    html+=`<div style="color:#475569;font-size:13px;text-align:center;padding:16px 0">Semua kasus telah ditutup. ✅</div>`;
+    html+=`<div style="color:#475569;font-size:13px;text-align:center;padding:16px 0">All cases closed. ✅</div>`;
   } else {
     active.forEach(c=>{
       const od=(c.mitigations||[]).filter(m=>m.status!=="Closed"&&isOverdue(m.dueDate)).length;
@@ -664,7 +664,7 @@ function renderDashboard(){
   html+=`</div></div>`;
 
   const kb=(localStorage.getItem(LS_KEY)||"").length;
-  html+=`<div style="margin-top:14px;text-align:center;font-size:10px;color:#334155">💾 Data tersimpan di perangkat ini · ${(kb/1024).toFixed(1)} KB · ${cases.length} kasus</div>`;
+  html+=`<div style="margin-top:14px;text-align:center;font-size:10px;color:#334155">💾 Data stored on this device · ${(kb/1024).toFixed(1)} KB · ${cases.length} cases</div>`;
   el.innerHTML=html;
 }
 
@@ -688,8 +688,8 @@ function renderCases(){
   if(cases.length===0){
     el.innerHTML=`<div style="text-align:center;padding:60px 20px">
       <div style="font-size:48px;margin-bottom:14px">✈️</div>
-      <p style="color:#64748B;margin-bottom:20px">Belum ada kasus.</p>
-      <button class="btn-primary" onclick="openNewCase()">+ Buka Investigasi Baru</button>
+      <p style="color:#64748B;margin-bottom:20px">No cases yet.</p>
+      <button class="btn-primary" onclick="openNewCase()">+ Open New Investigation</button>
     </div>`;
     return;
   }
@@ -700,7 +700,7 @@ function renderCases(){
   });
 
   let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <input id="cases-search" placeholder="Cari kasus, pesawat, ID..." value="${esc(casesSearch)}" oninput="casesSearch=this.value;debouncedRenderCases()" style="width:200px;flex-shrink:0">
+    <input id="cases-search" placeholder="Search cases, aircraft, ID..." value="${esc(casesSearch)}" oninput="casesSearch=this.value;debouncedRenderCases()" style="width:200px;flex-shrink:0">
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       ${["All",...Object.keys(STATUS_CFG)].map(f=>`<button class="tab-btn" onclick="casesFilter='${f}';renderCases()" style="background:${casesFilter===f?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.04)"};border:1px solid ${casesFilter===f?"#F59E0B":"rgba(255,255,255,0.08)"};color:${casesFilter===f?"#F59E0B":"#64748B"}">${f}</button>`).join("")}
     </div>
@@ -708,7 +708,7 @@ function renderCases(){
   <div class="card">`;
 
   if(filtered.length===0){
-    html+=`<div style="text-align:center;color:#475569;padding:40px 0;font-size:13px">Tidak ada kasus yang cocok.</div>`;
+    html+=`<div style="text-align:center;color:#475569;padding:40px 0;font-size:13px">No matching cases found.</div>`;
   } else {
     filtered.forEach(c=>{
       const sc=STATUS_CFG[c.status]||STATUS_CFG["Data Collection"];
@@ -829,19 +829,19 @@ function renderDetailTab(c){
   });
   h+=`</div>
   <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:12px 14px;margin-bottom:14px">
-    <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Narasi Kejadian</div>
+    <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px">Occurrence Narrative</div>
     <p style="color:#94A3B8;font-size:13px;line-height:1.7;margin:0">${esc(c.description||"—")}</p>
   </div>
   <div style="background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:10px;padding:16px;margin-bottom:14px">
     <div style="font-size:10px;color:#3B82F6;font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:10px">📋 ICAO GADP Risk Area</div>
     ${c.riskArea?`<div style="font-size:12px;color:#3B82F6;font-weight:700;margin-bottom:10px;padding:6px 10px;background:rgba(59,130,246,0.12);border-radius:6px">✓ [${esc(c.riskArea)}] ${esc(GADP_AREAS.find(a=>a.code===c.riskArea)?.label||"")}</div>`:""}
     <select id="inline-gadp-${esc(c.id)}" style="width:100%;background:rgba(255,255,255,0.07);border:1px solid rgba(59,130,246,0.3);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none;margin-bottom:10px;box-sizing:border-box">
-      <option value="">— Pilih Risk Area —</option>
+      <option value="">— Select Risk Area —</option>
       ${GADP_AREAS.map(a=>`<option value="${esc(a.code)}"${c.riskArea===a.code?" selected":""}>[${esc(a.code)}] ${esc(a.label)}</option>`).join("")}
     </select>
-    <button onclick="saveInlineGADP('${esc(c.id)}')" style="width:100%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Simpan Risk Area</button>
+    <button onclick="saveInlineGADP('${esc(c.id)}')" style="width:100%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Save Risk Area</button>
   </div>
-  <button onclick="deleteCase('${esc(c.id)}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#EF4444;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">🗑 Hapus Kasus</button>`;
+  <button onclick="deleteCase('${esc(c.id)}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#EF4444;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">🗑 Delete Case</button>`;
   return h;
 }
 
@@ -865,15 +865,15 @@ function renderRCATab(c){
   <div style="background:rgba(245,158,11,0.05);border:1px solid rgba(245,158,11,0.2);border-radius:12px;padding:16px;margin-bottom:14px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
       <div class="section-title" style="margin-bottom:0">🔗 Contributing Factors</div>
-      <button onclick="addRCAFactor('${esc(c.id)}')" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:7px;color:#F59E0B;padding:5px 12px;font-size:11px;font-weight:700">+ Tambah</button>
+      <button onclick="addRCAFactor('${esc(c.id)}')" style="background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.3);border-radius:7px;color:#F59E0B;padding:5px 12px;font-size:11px;font-weight:700">+ Add</button>
     </div>
-    ${cfHtml||`<div style="color:#475569;font-size:12px;text-align:center;padding:10px 0">Belum ada contributing factor.</div>`}
+    ${cfHtml||`<div style="color:#475569;font-size:12px;text-align:center;padding:10px 0">No contributing factors yet.</div>`}
   </div>
   <div style="background:rgba(139,92,246,0.05);border:1px solid rgba(139,92,246,0.2);border-radius:12px;padding:16px">
     <div class="section-title">🔍 Root Cause</div>
     <textarea rows="3" placeholder="Akar penyebab utama..." onchange="updateRCAField('${esc(c.id)}','rootCause',this.value)" style="margin-bottom:10px">${esc(rca.rootCause||"")}</textarea>
     <div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px">HFACS / Analysis Notes</div>
-    <textarea rows="2" placeholder="Catatan analisis HFACS, Swiss Cheese Model..." onchange="updateRCAField('${esc(c.id)}','analysisNotes',this.value)">${esc(rca.analysisNotes||"")}</textarea>
+    <textarea rows="2" placeholder="HFACS / Swiss Cheese Model analysis notes..." onchange="updateRCAField('${esc(c.id)}','analysisNotes',this.value)">${esc(rca.analysisNotes||"")}</textarea>
   </div>`;
 }
 function updateRCAField(caseId,key,val){
@@ -1006,7 +1006,7 @@ function renderTimelineTab(c){
   const evs=c.timeline||[];
   let evHtml="";
   if(evs.length===0){
-    evHtml=`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">Belum ada kronologi.</div>`;
+    evHtml=`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">No timeline events yet.</div>`;
   } else {
     evHtml=`<div style="position:relative"><div class="timeline-line"></div>`;
     evs.forEach((e,i)=>{
@@ -1027,7 +1027,7 @@ function renderTimelineTab(c){
   }
   return `
   <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:20px">
-    <div class="section-title">Tambah Kronologi Kejadian</div>
+    <div class="section-title">Add Timeline Event</div>
     <div style="display:grid;grid-template-columns:140px 1fr 100px;gap:8px;margin-bottom:8px">
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Waktu (HH:MM UTC)</div><input id="tl-time" placeholder="08:35 UTC"></div>
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Deskripsi</div><input id="tl-desc" placeholder="Deskripsi kejadian..."></div>
@@ -1035,7 +1035,7 @@ function renderTimelineTab(c){
         <select id="tl-type">${Object.keys(TYP).map(t=>`<option>${t}</option>`).join("")}</select>
       </div>
     </div>
-    <button onclick="addTimelineEvent('${esc(c.id)}')" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:12px;font-weight:800">+ Tambah Event</button>
+    <button onclick="addTimelineEvent('${esc(c.id)}')" style="background:linear-gradient(135deg,#3B82F6,#8B5CF6);border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:12px;font-weight:800">+ Add Event</button>
   </div>
   ${evHtml}`;
 }
@@ -1043,7 +1043,7 @@ function addTimelineEvent(caseId){
   const time=document.getElementById("tl-time")?.value||"";
   const desc=document.getElementById("tl-desc")?.value||"";
   const type=document.getElementById("tl-type")?.value||"Event";
-  if(!time.trim()||!desc.trim()){alert("Waktu dan deskripsi wajib diisi.");return;}
+  if(!time.trim()||!desc.trim()){alert("Time and description are required.");return;}
   const c=getCase(caseId);if(!c)return;
   const evs=[...(c.timeline||[]),{id:genUid(),time,description:desc,type}].sort((a,b)=>a.time.localeCompare(b.time));
   updateCase(caseId,{timeline:evs});
@@ -1060,7 +1060,7 @@ function renderMitigationTab(c){
   const mits=c.mitigations||[];
   let listHtml="";
   if(mits.length===0){
-    listHtml=`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">Belum ada proposed mitigation.</div>`;
+    listHtml=`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">No proposed mitigations yet.</div>`;
   } else {
     mits.forEach(m=>{
       const cfg=MIT_STATUS[m.status]||MIT_STATUS["Open"];
@@ -1075,7 +1075,7 @@ function renderMitigationTab(c){
           <div style="font-size:11px;color:${od?"#EF4444":"#64748B"}">📅 <span style="font-weight:600;color:${od?"#EF4444":"#94A3B8"}">${esc(m.dueDate||"—")}${od?" ⚠️ OVERDUE":""}</span></div>
           <div style="margin-left:auto;display:flex;gap:6px">
             <select onchange="updateMitStatus('${esc(c.id)}','${m.id}',this.value)" style="width:auto;padding:3px 8px;font-size:11px">${Object.keys(MIT_STATUS).map(s=>`<option${s===m.status?" selected":""}>${s}</option>`).join("")}</select>
-            <button onclick="deleteMit('${esc(c.id)}','${m.id}')" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:#EF4444;padding:3px 10px;font-size:11px;font-weight:700">Hapus</button>
+            <button onclick="deleteMit('${esc(c.id)}','${m.id}')" style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:#EF4444;padding:3px 10px;font-size:11px;font-weight:700">Delete</button>
           </div>
         </div>
       </div>`;
@@ -1089,14 +1089,14 @@ function renderMitigationTab(c){
   }
   return `
   <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:16px">
-    <div class="section-title">Tambah Mitigasi Baru</div>
+    <div class="section-title">Add New Mitigation</div>
     <textarea id="mit-action" rows="2" placeholder="Proposed mitigation / tindakan korektif..." style="margin-bottom:10px"></textarea>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Unit In Charge</div><input id="mit-unit" placeholder="Ketik nama unit..."></div>
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Due Date</div><input id="mit-due" type="date"></div>
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Status</div><select id="mit-status">${Object.keys(MIT_STATUS).map(s=>`<option>${s}</option>`).join("")}</select></div>
     </div>
-    <button onclick="addMit('${esc(c.id)}')" style="background:linear-gradient(135deg,#F59E0B,#EF4444);border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:12px;font-weight:800">+ Tambah</button>
+    <button onclick="addMit('${esc(c.id)}')" style="background:linear-gradient(135deg,#F59E0B,#EF4444);border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:12px;font-weight:800">+ Add</button>
   </div>
   ${listHtml}`;
 }
@@ -1115,7 +1115,7 @@ function updateMitStatus(caseId,mid,val){
   updateCase(caseId,{mitigations:(c.mitigations||[]).map(m=>m.id===mid?{...m,status:val}:m)});
 }
 function deleteMit(caseId,mid){
-  if(!confirm("Hapus mitigasi ini?"))return;
+  if(!confirm("Delete mitigasi ini?"))return;
   const c=getCase(caseId);if(!c)return;
   updateCase(caseId,{mitigations:(c.mitigations||[]).filter(m=>m.id!==mid)});
   setTab("mitigation");
@@ -1138,13 +1138,13 @@ function renderSafetyRecTab(c){
     ${r.response?`<div style="font-size:11px;color:#64748B;font-style:italic;margin-bottom:8px">Response: ${esc(r.response)}</div>`:""}
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
       ${Object.entries(REC_ST).map(([s,cfg])=>`<button onclick="updateRecStatus('${esc(c.id)}','${r.id}','${s}')" style="background:${r.status===s?cfg.bg:"rgba(255,255,255,0.04)"};border:1px solid ${cfg.color}40;border-radius:6px;color:${cfg.color};padding:4px 10px;font-size:11px;font-weight:700">${s}</button>`).join("")}
-      <button onclick="deleteRec('${esc(c.id)}','${r.id}')" style="margin-left:auto;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:#EF4444;padding:4px 10px;font-size:11px;font-weight:700">Hapus</button>
+      <button onclick="deleteRec('${esc(c.id)}','${r.id}')" style="margin-left:auto;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:6px;color:#EF4444;padding:4px 10px;font-size:11px;font-weight:700">Delete</button>
     </div>
   </div>`).join("");
 
   return `
   <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:16px">
-    <div class="section-title">Buat Safety Recommendation Baru</div>
+    <div class="section-title">Create New Safety Recommendation</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">No. Referensi</div><input id="rec-ref" placeholder="SR-2026-001"></div>
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Priority</div><select id="rec-prio">${Object.keys(PRIOS).map(p=>`<option>${p}</option>`).join("")}</select></div>
@@ -1154,7 +1154,7 @@ function renderSafetyRecTab(c){
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Addressed To</div><input id="rec-to" placeholder="Unit / Otoritas tujuan..."></div>
       <div><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;margin-bottom:4px">Target Date</div><input id="rec-date" type="date"></div>
     </div>
-    <button onclick="addRec('${esc(c.id)}')" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6);border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:12px;font-weight:800">+ Tambah Rekomendasi</button>
+    <button onclick="addRec('${esc(c.id)}')" style="background:linear-gradient(135deg,#8B5CF6,#3B82F6);border:none;border-radius:8px;color:#fff;padding:8px 18px;font-size:12px;font-weight:800">+ Add Rekomendasi</button>
   </div>
   ${listHtml}`;
 }
@@ -1172,7 +1172,7 @@ function updateRecStatus(caseId,rid,val){
   setTab("safetyRec");
 }
 function deleteRec(caseId,rid){
-  if(!confirm("Hapus rekomendasi ini?"))return;
+  if(!confirm("Delete rekomendasi ini?"))return;
   const c=getCase(caseId);if(!c)return;
   updateCase(caseId,{safetyRecs:(c.safetyRecs||[]).filter(r=>r.id!==rid)});
   setTab("safetyRec");
@@ -1236,39 +1236,39 @@ function setStatus(caseId,status){
 
 // ── Evidence Tab ──────────────────────────────
 var EVIDENCE_TYPES=["Flight Data Recorder (FDR)","Cockpit Voice Recorder (CVR)","ATC Recording","Crew Statement","Maintenance Record","Weather Report","NOTAM","CCTV/Video","Photograph","Airport/ATC Report","Aircraft Technical Log","Other"];
-var EVIDENCE_STATUS=["Diterima","Pending","Tidak Tersedia"];
+var EVIDENCE_STATUS=["Received","Pending","Tidak Tersedia"];
 
 function renderEvidenceTab(c){
   const evs=c.evidence||[];
   const listHtml=evs.length===0
-    ?`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">Belum ada evidence yang dicatat.</div>`
+    ?`<div style="text-align:center;color:#475569;padding:20px 0;font-size:13px">No evidence recorded yet.</div>`
     :evs.map((e,i)=>`
   <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px 14px;margin-bottom:8px">
     <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
       <div style="flex:1">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
           <span style="font-size:11px;font-weight:700;color:#F59E0B;background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2);border-radius:5px;padding:2px 8px">${esc(e.type||"")}</span>
-          <span style="font-size:10px;padding:2px 8px;border-radius:5px;font-weight:700;background:${e.status==="Diterima"?"rgba(16,185,129,0.1)":e.status==="Pending"?"rgba(245,158,11,0.1)":"rgba(239,68,68,0.1)"};color:${e.status==="Diterima"?"#10B981":e.status==="Pending"?"#F59E0B":"#EF4444"};border:1px solid ${e.status==="Diterima"?"rgba(16,185,129,0.2)":e.status==="Pending"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)"}">${esc(e.status||"")}</span>
+          <span style="font-size:10px;padding:2px 8px;border-radius:5px;font-weight:700;background:${e.status==="Received"?"rgba(16,185,129,0.1)":e.status==="Pending"?"rgba(245,158,11,0.1)":"rgba(239,68,68,0.1)"};color:${e.status==="Received"?"#10B981":e.status==="Pending"?"#F59E0B":"#EF4444"};border:1px solid ${e.status==="Received"?"rgba(16,185,129,0.2)":e.status==="Pending"?"rgba(245,158,11,0.2)":"rgba(239,68,68,0.2)"}">${esc(e.status||"")}</span>
         </div>
         <div style="font-size:12px;color:${cPrimary()};font-weight:600;margin-bottom:3px">${esc(e.name||"")}</div>
         ${e.description?`<div style="font-size:11px;color:#94A3B8;margin-bottom:3px">${esc(e.description)}</div>`:""}
-        <div style="font-size:10px;color:#475569">📅 Diterima: ${esc(e.receivedAt||"-")} · 👤 ${esc(e.receivedBy||"-")}</div>
+        <div style="font-size:10px;color:#475569">📅 Received: ${esc(e.receivedAt||"-")} · 👤 ${esc(e.receivedBy||"-")}</div>
       </div>
-      <button onclick="deleteEvidence('${esc(c.id)}',${i})" style="background:none;border:none;color:#EF4444;font-size:16px;padding:0 4px;cursor:pointer;flex-shrink:0" title="Hapus">×</button>
+      <button onclick="deleteEvidence('${esc(c.id)}',${i})" style="background:none;border:none;color:#EF4444;font-size:16px;padding:0 4px;cursor:pointer;flex-shrink:0" title="Delete">×</button>
     </div>
   </div>`).join("");
 
   return `
   <div style="margin-bottom:14px">
-    <button onclick="toggleEvidenceForm('${esc(c.id)}')" id="ev-add-btn" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:#F59E0B;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%">＋ Tambah Evidence</button>
+    <button onclick="toggleEvidenceForm('${esc(c.id)}')" id="ev-add-btn" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.3);border-radius:8px;color:#F59E0B;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;width:100%">＋ Add Evidence</button>
   </div>
   <div id="ev-form-wrap" style="display:none;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:16px;margin-bottom:14px">
-    <div style="font-size:12px;font-weight:700;color:#F59E0B;margin-bottom:12px">📋 Catat Evidence Baru</div>
+    <div style="font-size:12px;font-weight:700;color:#F59E0B;margin-bottom:12px">📋 Record New Evidence</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div>
-        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">JENIS EVIDENCE *</div>
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">EVIDENCE TYPE *</div>
         <select id="ev-type" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px">
-          <option value="">-- Pilih Jenis --</option>
+          <option value="">-- Select Type --</option>
           ${EVIDENCE_TYPES.map(t=>`<option value="${t}">${t}</option>`).join("")}
         </select>
       </div>
@@ -1280,26 +1280,26 @@ function renderEvidenceTab(c){
       </div>
     </div>
     <div style="margin-bottom:10px">
-      <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">NAMA / REFERENSI DOKUMEN *</div>
+      <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DOCUMENT NAME / REFERENCE *</div>
       <input id="ev-name" type="text" placeholder="cth: FDR Readout PK-GLQ, Crew Statement Captain Ahmad" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box">
     </div>
     <div style="margin-bottom:10px">
-      <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DESKRIPSI</div>
-      <textarea id="ev-desc" rows="2" placeholder="Keterangan singkat isi/kondisi evidence..." style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;resize:vertical;box-sizing:border-box"></textarea>
+      <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DESCRIPTION</div>
+      <textarea id="ev-desc" rows="2" placeholder="Brief description of evidence content/condition..." style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;resize:vertical;box-sizing:border-box"></textarea>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
       <div>
-        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">TANGGAL DITERIMA</div>
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DATE RECEIVED</div>
         <input id="ev-date" type="date" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box" value="${today()}">
       </div>
       <div>
-        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">DITERIMA OLEH</div>
-        <input id="ev-by" type="text" placeholder="Nama investigator" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box">
+        <div style="font-size:10px;color:#64748B;font-weight:700;margin-bottom:4px">RECEIVED BY</div>
+        <input id="ev-by" type="text" placeholder="Investigator name" style="width:100%;background:#0F172A;border:1px solid rgba(255,255,255,0.1);border-radius:7px;color:#E2E8F0;padding:7px 10px;font-size:12px;box-sizing:border-box">
       </div>
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="saveEvidence('${esc(c.id)}')" style="flex:1;background:#F59E0B;border:none;border-radius:8px;color:#000;padding:8px;font-size:12px;font-weight:700;cursor:pointer">💾 Simpan Evidence</button>
-      <button onclick="toggleEvidenceForm('${esc(c.id)}')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#64748B;padding:8px 14px;font-size:12px;cursor:pointer">Batal</button>
+      <button onclick="saveEvidence('${esc(c.id)}')" style="flex:1;background:#F59E0B;border:none;border-radius:8px;color:#000;padding:8px;font-size:12px;font-weight:700;cursor:pointer">💾 Save Evidence</button>
+      <button onclick="toggleEvidenceForm('${esc(c.id)}')" style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#64748B;padding:8px 14px;font-size:12px;cursor:pointer">Cancel</button>
     </div>
   </div>
   ${listHtml}`;
@@ -1318,12 +1318,12 @@ function toggleEvidenceForm(caseId){
 function saveEvidence(caseId){
   const type=(document.getElementById("ev-type")||{}).value||"";
   const name=(document.getElementById("ev-name")||{}).value||"";
-  const status=(document.getElementById("ev-status")||{}).value||"Diterima";
+  const status=(document.getElementById("ev-status")||{}).value||"Received";
   const description=(document.getElementById("ev-desc")||{}).value||"";
   const receivedAt=(document.getElementById("ev-date")||{}).value||today();
   const receivedBy=(document.getElementById("ev-by")||{}).value||"";
-  if(!type){alert("Pilih jenis evidence terlebih dahulu.");return;}
-  if(!name.trim()){alert("Nama/referensi dokumen wajib diisi.");return;}
+  if(!type){alert("Please select evidence type first.");return;}
+  if(!name.trim()){alert("Document name/reference is required.");return;}
   const c=getCase(caseId);if(!c)return;
   const entry={type,name:name.trim(),status,description:description.trim(),receivedAt,receivedBy:receivedBy.trim(),addedAt:today()};
   updateCase(caseId,{evidence:[...(c.evidence||[]),entry]});
@@ -1331,14 +1331,14 @@ function saveEvidence(caseId){
 }
 
 function deleteEvidence(caseId,idx){
-  if(!confirm("Hapus evidence ini?"))return;
+  if(!confirm("Delete evidence ini?"))return;
   const c=getCase(caseId);if(!c)return;
   const ev=[...(c.evidence||[])];ev.splice(idx,1);
   updateCase(caseId,{evidence:ev});
   setTab("evidence");
 }
 function deleteCase(caseId){
-  if(!confirm("Hapus kasus ini? Data tidak bisa dikembalikan."))return;
+  if(!confirm("Delete this case? This action cannot be undone."))return;
   cases=cases.filter(c=>c.id!==caseId);
   saveData();
   deleteFromFirestore(caseId);
@@ -1358,7 +1358,7 @@ function renderFormModal(){
   const v=(k,def="")=>esc(c?c[k]||def:def);
   document.getElementById("modal-form").innerHTML=`<div class="modal-box" style="max-width:580px">
     <button onclick="closeFormModal()" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,0.07);border:none;color:#94A3B8;width:30px;height:30px;border-radius:8px;font-size:16px">✕</button>
-    <h2 style="margin:0 0 20px;font-size:18px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif">${isEdit?"✏️ Edit Kasus":"✈️ Buka Investigasi Baru"}</h2>
+    <h2 style="margin:0 0 20px;font-size:18px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif">${isEdit?"✏️ Edit Case":"✈️ Open New Investigation"}</h2>
     <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Judul / Deskripsi Singkat *</label><input id="f-title" value="${v("title")}" placeholder="e.g. Hard Landing – CGK Runway 25R"></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
       <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Tipe Kejadian</label>
@@ -1369,22 +1369,22 @@ function renderFormModal(){
       </div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Registrasi Pesawat *</label><input id="f-ac" value="${v("aircraft")}" placeholder="PK-GLF"></div>
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Nomor Penerbangan</label><input id="f-flt" value="${v("flightNo")}" placeholder="QG 123"></div>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Aircraft Registration *</label><input id="f-ac" value="${v("aircraft")}" placeholder="PK-GLF"></div>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Flight Number</label><input id="f-flt" value="${v("flightNo")}" placeholder="QG 123"></div>
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:13px">
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Lokasi / Bandara</label><input id="f-loc" value="${v("location")}" placeholder="CGK / Bandara Soekarno-Hatta"></div>
-      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Tanggal Kejadian</label><input id="f-date" type="date" value="${v("date",today())}"></div>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Location / Airport</label><input id="f-loc" value="${v("location")}" placeholder="CGK / Bandara Soekarno-Hatta"></div>
+      <div><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Date of Occurrence</label><input id="f-date" type="date" value="${v("date",today())}"></div>
     </div>
-    <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Lead Investigator</label><input id="f-inv" value="${v("investigator")}" placeholder="Nama investigator"></div>
+    <div style="margin-bottom:13px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Lead Investigator</label><input id="f-inv" value="${v("investigator")}" placeholder="Investigator name"></div>
     <div style="margin-bottom:13px">
       <label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">ICAO GADP Risk Area</label>
       <select id="f-riskarea" style="width:100%;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.12);border-radius:8px;padding:9px 12px;color:#F1F5F9;font-size:13px;outline:none;box-sizing:border-box">
-        <option value="">— Pilih Risk Area —</option>
+        <option value="">— Select Risk Area —</option>
         ${GADP_AREAS.map(a=>`<option value="${esc(a.code)}"${(c?.riskArea||"")===a.code?" selected":""}>[${esc(a.code)}] ${esc(a.label)}</option>`).join("")}
       </select>
     </div>
-    <div style="margin-bottom:16px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Narasi Kejadian</label><textarea id="f-desc" rows="3" placeholder="Deskripsi singkat kejadian...">${v("description")}</textarea></div>
+    <div style="margin-bottom:16px"><label style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:5px">Occurrence Narrative</label><textarea id="f-desc" rows="3" placeholder="Brief description of occurrence...">${v("description")}</textarea></div>
     <button class="btn-primary" onclick="submitForm(${isEdit})" style="width:100%;padding:13px;font-size:14px;border-radius:10px">${isEdit?"Simpan Perubahan":"Buka Kasus Investigasi"}</button>
   </div>`;
 }
@@ -1393,7 +1393,7 @@ function submitForm(isEdit){
   const title=document.getElementById("f-title")?.value?.trim()||"";
   const aircraft=document.getElementById("f-ac")?.value?.trim()||"";
   if(!title){alert("Judul wajib diisi.");return;}
-  if(!aircraft){alert("Registrasi pesawat wajib diisi.");return;}
+  if(!aircraft){alert("Aircraft registration is required.");return;}
   const data={
     title,aircraft,
     type:document.getElementById("f-type")?.value||"Incident",
@@ -1597,11 +1597,11 @@ function renderTrend(){
   html+='</div>';
 
   if(totalWithGADP===0){
-    html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>💡</span><div><b style="color:#F59E0B">Risk Area Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Edit kasus dan pilih Risk Area untuk melihat tren.</span></div></div>';
+    html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>💡</span><div><b style="color:#F59E0B">Risk Area Not Filled</b><br><span style="font-size:11px;color:#64748B">Edit case and select Risk Area to view trends.</span></div></div>';
   }
 
   if(sortedMonths.length===0){
-    html+='<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>📅</span><div><b style="color:#3B82F6">Tanggal Kasus Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Pastikan setiap kasus memiliki tanggal kejadian untuk melihat grafik tren.</span></div></div>';
+    html+='<div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>📅</span><div><b style="color:#3B82F6">Case Date Not Filled</b><br><span style="font-size:11px;color:#64748B">Ensure each case has an occurrence date to view trend charts.</span></div></div>';
     el.innerHTML=html;
     return;
   }
@@ -1684,7 +1684,7 @@ function renderTrend(){
   var gadpBtns=document.getElementById("gadp-filter-btns");
   if(gadpBtns){
     var allBtn=document.createElement("button");
-    allBtn.textContent="Semua"; allBtn.dataset.filter="ALL";
+    allBtn.textContent="All"; allBtn.dataset.filter="ALL";
     allBtn.style.cssText="background:"+(trendFilter==="ALL"?"rgba(59,130,246,0.2)":"rgba(255,255,255,0.04)")+";border:1px solid "+(trendFilter==="ALL"?"#3B82F6":"rgba(255,255,255,0.08)")+";border-radius:7px;color:"+(trendFilter==="ALL"?"#3B82F6":"#64748B")+";padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer";
     gadpBtns.appendChild(allBtn);
     allGADP.forEach(function(g,gi){
@@ -1708,7 +1708,7 @@ function renderTrend(){
   }
   } catch(e) {
     console.error("renderTrend error:", e);
-    el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#EF4444"><div style="font-size:32px;margin-bottom:10px">⚠️</div><p style="font-size:13px">Terjadi error saat memuat tren: '+e.message+'</p><button class="btn-ghost" onclick="renderTrend()" style="margin-top:12px">🔄 Coba Lagi</button></div>';
+    el.innerHTML='<div style="text-align:center;padding:40px 20px;color:#EF4444"><div style="font-size:32px;margin-bottom:10px">⚠️</div><p style="font-size:13px">Terjadi error while loading trend: '+e.message+'</p><button class="btn-ghost" onclick="renderTrend()" style="margin-top:12px">🔄 Try Again</button></div>';
   }
 }
 
