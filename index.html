@@ -672,6 +672,17 @@ function renderDashboard(){
 // RENDER CASES LIST
 // ─────────────────────────────────────────────
 let casesSearch="", casesFilter="All";
+var _searchTimer=null;
+function debouncedRenderCases(){
+  clearTimeout(_searchTimer);
+  _searchTimer=setTimeout(function(){
+    var sel=document.getElementById('cases-search');
+    var ss=sel?sel.selectionStart:0, se=sel?sel.selectionEnd:0;
+    renderCases();
+    var ns=document.getElementById('cases-search');
+    if(ns){ns.focus();try{ns.setSelectionRange(ss,se);}catch(e){}}
+  },150);
+}
 function renderCases(){
   const el=document.getElementById("view-cases");
   if(cases.length===0){
@@ -689,7 +700,7 @@ function renderCases(){
   });
 
   let html=`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px">
-    <input id="cases-search" placeholder="Cari kasus, pesawat, ID..." value="${esc(casesSearch)}" oninput="casesSearch=this.value;renderCases()" style="width:200px;flex-shrink:0">
+    <input id="cases-search" placeholder="Cari kasus, pesawat, ID..." value="${esc(casesSearch)}" oninput="casesSearch=this.value;debouncedRenderCases()" style="width:200px;flex-shrink:0">
     <div style="display:flex;gap:6px;flex-wrap:wrap">
       ${["All",...Object.keys(STATUS_CFG)].map(f=>`<button class="tab-btn" onclick="casesFilter='${f}';renderCases()" style="background:${casesFilter===f?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.04)"};border:1px solid ${casesFilter===f?"#F59E0B":"rgba(255,255,255,0.08)"};color:${casesFilter===f?"#F59E0B":"#64748B"}">${f}</button>`).join("")}
     </div>
