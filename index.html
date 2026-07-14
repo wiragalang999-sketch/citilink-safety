@@ -156,7 +156,7 @@ try {
   </div>
   <div style="display:flex;gap:6px" id="nav-btns">
     <button class="tab-btn" id="nav-dashboard" onclick="setView('dashboard')">📊 Dashboard</button>
-    <button class="tab-btn" id="nav-trend" onclick="setView('trend')">📈 Tren GADP</button>
+    <button class="tab-btn" id="nav-trend" onclick="setView('trend')">📈 Tren Risk Area</button>
     <button class="tab-btn" id="nav-cases" onclick="setView('cases')">📋 Kasus</button>
   </div>
   <div style="display:flex;align-items:center;gap:8px">
@@ -828,7 +828,7 @@ function renderDetailTab(c){
       <option value="">— Pilih Risk Area —</option>
       ${GADP_AREAS.map(a=>`<option value="${esc(a.code)}"${c.riskArea===a.code?" selected":""}>[${esc(a.code)}] ${esc(a.label)}</option>`).join("")}
     </select>
-    <button onclick="saveInlineGADP('${esc(c.id)}')" style="width:100%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Simpan GADP</button>
+    <button onclick="saveInlineGADP('${esc(c.id)}')" style="width:100%;background:linear-gradient(135deg,#3B82F6,#8B5CF6);border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Simpan Risk Area</button>
   </div>
   <button onclick="deleteCase('${esc(c.id)}')" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;color:#EF4444;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">🗑 Hapus Kasus</button>`;
   return h;
@@ -1580,13 +1580,13 @@ function renderTrend(){
 
   // Summary cards
   html+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
-  [["Total",cases.length,"#94A3B8"],["GADP",totalWithGADP+"/"+cases.length,"#3B82F6"],["Top Risk",topGADP,"#EF4444"],["Bulan Ini",thisMonthTotal,"#F59E0B"]].forEach(function(s){
+  [["Total",cases.length,"#94A3B8"],["Risk Area",totalWithGADP+"/"+cases.length,"#3B82F6"],["Top Risk",topGADP,"#EF4444"],["Bulan Ini",thisMonthTotal,"#F59E0B"]].forEach(function(s){
     html+='<div class="stat-card"><div style="font-size:20px;font-weight:800;color:'+s[2]+'">'+s[1]+'</div><div style="font-size:10px;color:#64748B;margin-top:2px;font-weight:700;text-transform:uppercase">'+s[0]+'</div></div>';
   });
   html+='</div>';
 
   if(totalWithGADP===0){
-    html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>💡</span><div><b style="color:#F59E0B">GADP Risk Area Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Edit kasus dan pilih GADP Risk Area untuk melihat tren.</span></div></div>';
+    html+='<div style="background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:14px 18px;margin-bottom:14px;display:flex;align-items:center;gap:10px"><span>💡</span><div><b style="color:#F59E0B">Risk Area Belum Diisi</b><br><span style="font-size:11px;color:#64748B">Edit kasus dan pilih Risk Area untuk melihat tren.</span></div></div>';
   }
 
   if(sortedMonths.length===0){
@@ -1609,7 +1609,7 @@ function renderTrend(){
 
   // GADP trend
   if(allGADP.length>0){
-    html+='<div class="card" style="margin-bottom:12px"><div class="section-title">📋 Tren GADP Risk Area</div>';
+    html+='<div class="card" style="margin-bottom:12px"><div class="section-title">📋 Tren Risk Area</div>';
     html+='<div id="gadp-filter-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px"></div>';
 
     var gadpKeys=trendFilter==="ALL"?allGADP:[trendFilter];
@@ -1617,13 +1617,13 @@ function renderTrend(){
 
     if(trendFilter!=="ALL"){
       // Single GADP: simple line chart
-      html+=makeSVG(function(m,k){return months[m]?(months[m].byGADP[k]||0):0;},gadpKeys,gadpColors,sortedMonths,"GADP per Bulan");
+      html+=makeSVG(function(m,k){return months[m]?(months[m].byGADP[k]||0):0;},gadpKeys,gadpColors,sortedMonths,"Risk Area per Bulan");
       html+=lgnd(gadpKeys,gadpColors);
     } else {
       // All GADP: table-style per month
       var tableHtml='<div style="overflow-x:auto">';
       tableHtml+='<table style="width:100%;border-collapse:collapse;font-size:11px">';
-      tableHtml+='<thead><tr><th style="text-align:left;padding:6px 8px;color:#64748B;font-weight:700;border-bottom:1px solid rgba(128,128,128,0.15)">GADP</th>';
+      tableHtml+='<thead><tr><th style="text-align:left;padding:6px 8px;color:#64748B;font-weight:700;border-bottom:1px solid rgba(128,128,128,0.15)">Risk Area</th>';
       sortedMonths.forEach(function(m){
         var p=m.split("-"); var mn=["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Ags","Sep","Okt","Nov","Des"];
         tableHtml+='<th style="text-align:center;padding:6px 8px;color:#64748B;font-weight:700;border-bottom:1px solid rgba(128,128,128,0.15)">'+mn[parseInt(p[1])-1]+" '"+p[0].substring(2)+'</th>';
@@ -1651,7 +1651,7 @@ function renderTrend(){
 
     // Distribution
     var distFilter=window._distFilter||"alltime";
-    html+='<div class="card" style="margin-bottom:12px"><div class="section-title">🎯 Distribusi GADP</div>';
+    html+='<div class="card" style="margin-bottom:12px"><div class="section-title">🎯 Distribusi Risk Area</div>';
     html+='<div id="dist-filter-btns" style="display:flex;gap:6px;margin-bottom:12px"></div>';
     function gadpBar(code,n,total,gi){ var area=GADP_AREAS.find(function(a){return a.code===code;}); var col=GADP_COLORS[gi%GADP_COLORS.length]; var pct=total>0?Math.round(n/total*100):0; return '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(255,255,255,0.03);border-radius:7px;margin-bottom:4px"><span style="font-size:10px;font-weight:800;color:'+col+';min-width:52px;font-family:monospace">'+code+'</span><span style="font-size:10px;color:#64748B;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(area?area.label:code)+'</span><div class="pbar-track" style="width:80px"><div class="pbar-fill" style="width:'+pct+'%;background:'+col+'"></div></div><span style="font-size:10px;font-weight:700;color:'+col+';min-width:40px;text-align:right">'+n+' ('+pct+'%)</span></div>'; }
     if(distFilter==="alltime"){
