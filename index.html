@@ -1806,11 +1806,11 @@ function renderMap(){
         +'<div style="font-size:11px;color:#64748B;margin-bottom:2px">📅 '+esc(c.date||'—')+'</div>'
         +'<div style="font-size:11px;color:#64748B;margin-bottom:2px">✈️ '+esc(c.aircraft||'—')+(c.flightNo?' · '+esc(c.flightNo):'')+'</div>'
         +'<div style="font-size:11px;color:#64748B;margin-bottom:6px">📍 '+esc(c.location||'—')+'</div>'
-        +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">'
         +'<span style="background:'+color+'22;color:'+color+';border:1px solid '+color+'44;border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">'+esc(c.severity)+'</span>'
         +'<span style="background:rgba(0,0,0,0.06);border-radius:10px;padding:2px 8px;font-size:10px;color:#475569">'+esc(c.status)+'</span>'
         +'</div>'
-        +'<div style="margin-top:8px"><button onclick="openCase(\''+c.id+'\')" style="background:#00A651;border:none;border-radius:6px;color:#fff;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;width:100%">View Case →</button></div>'
+        +'<button onclick="_map.closePopup();setTimeout(function(){openCase(\''+c.id+'\');},100);" style="background:#00A651;border:none;border-radius:6px;color:#fff;padding:6px 12px;font-size:11px;font-weight:700;cursor:pointer;width:100%">View Case →</button>'
         +'</div>';
       marker.bindPopup(popupContent, {maxWidth:260});
     });
