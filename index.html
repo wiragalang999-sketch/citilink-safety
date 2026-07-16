@@ -1870,17 +1870,17 @@ function calcInternalIR(monthKey,departures){
 }
 
 function irBarColor(ir,tG,tY){
-  if(ir===null||ir===undefined)return 'rgba(255,255,255,0.08)';
+  if(ir===null||ir===undefined||isNaN(ir))return 'rgba(255,255,255,0.08)';
   if(ir<=tG)return '#10B981';
   if(ir<=tY)return '#F59E0B';
   return '#EF4444';
 }
 
-function irStatusBadge(ir,tG,tY){
-  if(ir===null)return '<span style="font-size:10px;color:#475569">No data</span>';
-  if(ir<=tG)return '<span style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">SAFE</span>';
-  if(ir<=tY)return '<span style="background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">CAUTION</span>';
-  return '<span style="background:rgba(239,68,68,.15);color:#EF4444;border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">DANGER</span>';
+function irALOSPbadge(ir,tG,tY){
+  if(ir===null||ir===undefined||isNaN(ir))return '<span style="font-size:10px;color:#475569">No data</span>';
+  if(ir<=tG)return '<span style="background:rgba(16,185,129,.15);color:#10B981;border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">ALOSP ✓</span>';
+  if(ir<=tY)return '<span style="background:rgba(245,158,11,.15);color:#F59E0B;border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">ALOSP ⚠</span>';
+  return '<span style="background:rgba(239,68,68,.15);color:#EF4444;border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:2px 8px;font-size:10px;font-weight:700">ALOSP ✗</span>';
 }
 
 function renderIR(){
@@ -1897,24 +1897,141 @@ function renderIR(){
   var tYellow=parseFloat(settings.tYellow||1.0);
   var tRed=parseFloat(settings.tRed||2.0);
   var depMap=settings.departures||{};
-  var cumMap={};
-  (cumData||[]).forEach(function(r){cumMap[r.key]=r.ir;});
 
-  var internalIRs=months.map(function(m){
-    var dep=parseFloat(depMap[m.key])||0;
-    return{key:m.key,label:m.label,ir:calcInternalIR(m.key,dep),dep:dep,
-           count:cases.filter(function(c){return c.date&&c.date.slice(0,7)===m.key;}).length};
+  // Both internal and cumulative are now fully manual
+  var intMap={};  // internal IR per month
+  var cumMap={};  // cumulative IR per month
+  (cumData||[]).forEach(function(r){
+    if(r.type==='internal') intMap[r.key]=r.ir;
+    else cumMap[r.key]=r.ir;
+  });
+
+  var monthData=months.map(function(m){
+    return{
+      key:m.key, label:m.label,
+      intIR: intMap[m.key]!=null ? parseFloat(intMap[m.key]) : null,
+      cumIR: cumMap[m.key]!=null ? parseFloat(cumMap[m.key]) : null,
+      dep:   parseFloat(depMap[m.key])||0,
+    };
   });
 
   var maxIR=Math.max(tRed*1.2,0.5);
-  internalIRs.forEach(function(d){if(d.ir&&d.ir>maxIR)maxIR=d.ir*1.1;});
-  (cumData||[]).forEach(function(r){if(r.ir&&r.ir>maxIR)maxIR=r.ir*1.1;});
+  monthData.forEach(function(d){
+    if(d.intIR&&d.intIR>maxIR)maxIR=d.intIR*1.1;
+    if(d.cumIR&&d.cumIR>maxIR)maxIR=d.cumIR*1.1;
+  });
   maxIR=Math.ceil(maxIR*10)/10;
 
-  var latestInternal=internalIRs[internalIRs.length-1];
-  var latestCum=cumMap[months[months.length-1].key];
-  var vals=internalIRs.filter(function(d){return d.ir!==null;}).map(function(d){return d.ir;});
-  var avgInternal=vals.length?(vals.reduce(function(a,b){return a+b;},0)/vals.length):null;
+  var lastInternal=monthData[monthData.length-1].intIR;
+  var lastCum=monthData[monthData.length-1].cumIR;
+  var intVals=monthData.filter(function(d){return d.intIR!==null;}).map(function(d){return d.intIR;});
+  var avgInternal=intVals.length?(intVals.reduce(function(a,b){return a+b;},0)/intVals.length):null;
+
+  el.innerHTML='<div style="padding:0 0 24px">'
+  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">'
+  +'<div><div style="font-size:18px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif">📉 Incident Rate Monitor</div>'
+  +'<div style="font-size:12px;color:#64748B;margin-top:2px">Formula: (Occurrences × 1,000) ÷ Flight Departures · '
+  +(window._fbDB?'<span style="color:#10B981">✅ Synced Firebase — shared with all investigators</span>':'<span style="color:#F59E0B">⚠️ Offline mode</span>')
+  +'</div></div>'
+  +'<button onclick="irOpenSettings()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:#3B82F6;padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">⚙️ Settings & Thresholds</button></div>'
+
+  // Summary cards
+  +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">'
+  +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Latest Internal IR</div>'
+  +'<div style="font-size:28px;font-weight:800;color:'+irBarColor(lastInternal,tGreen,tYellow)+'">'+(lastInternal!==null?lastInternal.toFixed(3):'—')+'</div>'
+  +'<div style="margin-top:6px">'+irALOSPbadge(lastInternal,tGreen,tYellow)+'</div>'
+  +'<div style="font-size:10px;color:#475569;margin-top:4px">'+months[months.length-1].label+' · Manual</div></div>'
+  +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Latest Cumulative IR</div>'
+  +'<div style="font-size:28px;font-weight:800;color:'+irBarColor(lastCum,tGreen,tYellow)+'">'+(lastCum!==null?lastCum.toFixed(3):'—')+'</div>'
+  +'<div style="margin-top:6px">'+irALOSPbadge(lastCum,tGreen,tYellow)+'</div>'
+  +'<div style="font-size:10px;color:#475569;margin-top:4px">'+months[months.length-1].label+' · Manual</div></div>'
+  +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">12-Month Avg Internal</div>'
+  +'<div style="font-size:28px;font-weight:800;color:'+irBarColor(avgInternal,tGreen,tYellow)+'">'+(avgInternal!==null?avgInternal.toFixed(3):'—')+'</div>'
+  +'<div style="margin-top:6px">'+irALOSPbadge(avgInternal,tGreen,tYellow)+'</div>'
+  +'<div style="font-size:10px;color:#475569;margin-top:4px">Rolling average</div></div>'
+  +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">ALOSP Thresholds</div>'
+  +'<div style="font-size:12px;margin-top:4px">'
+  +'<div style="color:#10B981;margin-bottom:3px">✓ Below ALOSP ≤ '+tGreen+'</div>'
+  +'<div style="color:#F59E0B;margin-bottom:3px">⚠ ALOSP ≤ '+tYellow+'</div>'
+  +'<div style="color:#EF4444">✗ Above ALOSP > '+tYellow+'</div>'
+  +'</div></div></div>'
+
+  // 3D Chart
+  +'<div class="card" style="margin-bottom:16px;overflow:hidden">'
+  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+  +'<div class="section-title">📊 Monthly Incident Rate — Internal vs Cumulative</div>'
+  +'<div style="display:flex;gap:12px">'
+  +'<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;background:#3B82F6;border-radius:2px"></div><span style="font-size:11px;color:#64748B">Internal</span></div>'
+  +'<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;background:#8B5CF6;border-radius:2px"></div><span style="font-size:11px;color:#64748B">Cumulative</span></div>'
+  +'</div></div>'
+  +'<div style="overflow-x:auto"><div style="min-width:700px;padding:0 8px">'
+  +renderIRChart3D(monthData,maxIR,tGreen,tYellow,tRed)
+  +'</div></div></div>'
+
+  // Data table
+  +'<div class="card" style="margin-bottom:16px">'
+  +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+  +'<div class="section-title">📋 Monthly Data Table</div>'
+  +'<button onclick="irOpenDataInput()" style="background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.3);border-radius:7px;color:#8B5CF6;padding:6px 14px;font-size:11px;font-weight:700;cursor:pointer">✏️ Edit IR Data</button></div>'
+  +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px">'
+  +'<thead><tr style="border-bottom:1px solid rgba(255,255,255,.08)">'
+  +'<th style="text-align:left;padding:8px 12px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase">Month</th>'
+  +'<th style="text-align:center;padding:8px 12px;font-size:10px;font-weight:700;color:#3B82F6;text-transform:uppercase">Internal IR</th>'
+  +'<th style="text-align:center;padding:8px 12px;font-size:10px;font-weight:700;color:#8B5CF6;text-transform:uppercase">Cumulative IR</th>'
+  +'<th style="text-align:center;padding:8px 12px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase">ALOSP Status</th>'
+  +'</tr></thead><tbody>'
+  +monthData.map(function(d){
+    return '<tr style="border-bottom:1px solid rgba(255,255,255,.04)">'
+      +'<td style="padding:8px 12px;color:#E2E8F0;font-weight:600">'+d.label+'</td>'
+      +'<td style="padding:8px 12px;text-align:center;font-weight:700;color:'+(d.intIR!==null?irBarColor(d.intIR,tGreen,tYellow):'#334155')+'">'+(d.intIR!==null?d.intIR.toFixed(4):'—')+'</td>'
+      +'<td style="padding:8px 12px;text-align:center;font-weight:700;color:'+(d.cumIR!==null?irBarColor(d.cumIR,tGreen,tYellow):'#334155')+'">'+(d.cumIR!==null?d.cumIR.toFixed(4):'—')+'</td>'
+      +'<td style="padding:8px 12px;text-align:center">'+irALOSPbadge(d.intIR,tGreen,tYellow)+'</td>'
+      +'</tr>';
+  }).join('')
+  +'</tbody></table></div></div></div>'
+
+  // Settings modal
+  +'<div id="ir-modal-settings" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10001;align-items:center;justify-content:center;padding:20px">'
+  +'<div style="background:#0D1526;border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:440px;padding:24px">'
+  +'<h3 style="font-size:15px;font-weight:800;color:#F1F5F9;margin-bottom:6px">⚙️ ALOSP Thresholds</h3>'
+  +'<p style="font-size:12px;color:#64748B;margin-bottom:18px">Set IR threshold values for ALOSP status indicator.</p>'
+  +'<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#10B981;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">✓ Below ALOSP (IR ≤)</div>'
+  +'<input id="ir-t-green" type="number" step="0.01" value="'+tGreen+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E2E8F0;padding:8px 12px;font-size:13px;outline:none"></div>'
+  +'<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#F59E0B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">⚠ ALOSP (IR ≤)</div>'
+  +'<input id="ir-t-yellow" type="number" step="0.01" value="'+tYellow+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E2E8F0;padding:8px 12px;font-size:13px;outline:none"></div>'
+  +'<div style="margin-bottom:18px"><div style="font-size:10px;font-weight:700;color:#EF4444;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">✗ Above ALOSP (IR >)</div>'
+  +'<input id="ir-t-red" type="number" step="0.01" value="'+tRed+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E2E8F0;padding:8px 12px;font-size:13px;outline:none"></div>'
+  +'<div style="display:flex;gap:10px">'
+  +'<button onclick="irSaveSettings()" style="flex:1;background:#00A651;border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Save</button>'
+  +'<button onclick="document.getElementById(\'ir-modal-settings\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#94A3B8;padding:10px 16px;font-size:13px;cursor:pointer">Cancel</button>'
+  +'</div></div></div>'
+
+  // Data input modal - now with type selector (Internal / Cumulative)
+  +'<div id="ir-modal-data" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10001;align-items:center;justify-content:center;padding:20px;overflow-y:auto">'
+  +'<div style="background:#0D1526;border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:580px;padding:24px;margin:auto">'
+  +'<h3 style="font-size:15px;font-weight:800;color:#F1F5F9;margin-bottom:6px">✏️ Edit Monthly IR Data</h3>'
+  +'<p style="font-size:12px;color:#64748B;margin-bottom:14px">Input Incident Rate per bulan. Semua data manual — Internal dan Cumulative.</p>'
+  +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
+  +'<thead><tr style="border-bottom:1px solid rgba(255,255,255,.08)">'
+  +'<th style="text-align:left;padding:6px 8px;font-size:10px;color:#475569;text-transform:uppercase">Month</th>'
+  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#3B82F6;text-transform:uppercase">Internal IR</th>'
+  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#8B5CF6;text-transform:uppercase">Cumulative IR</th>'
+  +'</tr></thead><tbody>'
+  +months.map(function(m){
+    var intV=intMap[m.key]!=null?intMap[m.key]:'';
+    var cumV=cumMap[m.key]!=null?cumMap[m.key]:'';
+    return '<tr style="border-bottom:1px solid rgba(255,255,255,.04)">'
+      +'<td style="padding:6px 8px;color:#E2E8F0;font-weight:600">'+m.label+'</td>'
+      +'<td style="padding:5px 6px"><input type="number" data-key="'+m.key+'" data-type="internal" step="0.0001" value="'+intV+'" placeholder="e.g. 0.3598" style="width:100%;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.2);border-radius:6px;color:#E2E8F0;padding:5px 8px;font-size:12px;text-align:center;outline:none"></td>'
+      +'<td style="padding:5px 6px"><input type="number" data-key="'+m.key+'" data-type="cumulative" step="0.0001" value="'+cumV+'" placeholder="e.g. 0.4200" style="width:100%;background:rgba(139,92,246,.07);border:1px solid rgba(139,92,246,.2);border-radius:6px;color:#E2E8F0;padding:5px 8px;font-size:12px;text-align:center;outline:none"></td>'
+      +'</tr>';
+  }).join('')
+  +'</tbody></table>'
+  +'<div style="display:flex;gap:10px;margin-top:16px">'
+  +'<button onclick="irSaveData()" style="flex:1;background:#00A651;border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Save All Data</button>'
+  +'<button onclick="document.getElementById(\'ir-modal-data\').style.display=\'none\'" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#94A3B8;padding:10px 16px;font-size:13px;cursor:pointer">Cancel</button>'
+  +'</div></div></div>';
+}
 
   el.innerHTML='<div style="padding:0 0 24px">'
   +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">'
@@ -1939,9 +2056,9 @@ function renderIR(){
   +'<div style="margin-top:6px">'+irStatusBadge(avgInternal,tGreen,tYellow)+'</div>'
   +'<div style="font-size:10px;color:#475569;margin-top:4px">Rolling average</div></div>'
   +'<div class="card" style="text-align:center;padding:16px"><div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">Thresholds</div>'
-  +'<div style="font-size:12px;margin-top:4px"><div style="color:#10B981;margin-bottom:3px">🟢 Safe ≤ '+tGreen+'</div>'
-  +'<div style="color:#F59E0B;margin-bottom:3px">🟡 Caution ≤ '+tYellow+'</div>'
-  +'<div style="color:#EF4444">🔴 Danger > '+tYellow+'</div></div></div></div>'].join('')
+  +'<div style="font-size:12px;margin-top:4px"><div style="color:#10B981;margin-bottom:3px">🟢 Below ALOSP ≤ '+tGreen+'</div>'
+  +'<div style="color:#F59E0B;margin-bottom:3px">🟡 ALOSP ≤ '+tYellow+'</div>'
+  +'<div style="color:#EF4444">🔴 Above ALOSP > '+tYellow+'</div></div></div></div>'].join('')
 
   // 3D Chart
   +'<div class="card" style="margin-bottom:16px;overflow:hidden">'
@@ -1986,11 +2103,11 @@ function renderIR(){
   +'<div id="ir-modal-settings" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10001;align-items:center;justify-content:center;padding:20px">'
   +'<div style="background:#0D1526;border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:440px;padding:24px">'
   +'<h3 style="font-size:15px;font-weight:800;color:#F1F5F9;margin-bottom:20px">⚙️ Settings & Thresholds</h3>'
-  +'<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🟢 Safe Threshold (IR ≤)</div>'
+  +'<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🟢 Below ALOSP (IR ≤)</div>'
   +'<input id="ir-t-green" type="number" step="0.1" value="'+tGreen+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E2E8F0;padding:8px 12px;font-size:13px"></div>'
-  +'<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🟡 Caution Threshold (IR ≤)</div>'
+  +'<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🟡 ALOSP (IR ≤)</div>'
   +'<input id="ir-t-yellow" type="number" step="0.1" value="'+tYellow+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E2E8F0;padding:8px 12px;font-size:13px"></div>'
-  +'<div style="margin-bottom:18px"><div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🔴 Danger Threshold (IR >)</div>'
+  +'<div style="margin-bottom:18px"><div style="font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">🔴 Above ALOSP (IR >)</div>'
   +'<input id="ir-t-red" type="number" step="0.1" value="'+tRed+'" style="width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:#E2E8F0;padding:8px 12px;font-size:13px"></div>'
   +'<div style="display:flex;gap:10px">'
   +'<button onclick="irSaveSettings()" style="flex:1;background:#00A651;border:none;border-radius:8px;color:#fff;padding:10px;font-size:13px;font-weight:800;cursor:pointer">💾 Save</button>'
@@ -2027,63 +2144,50 @@ function renderIR(){
   +'</div></div></div>';
 }
 
-function renderIRChart3D(internalIRs,cumMap,months,maxIR,tGreen,tYellow,tRed){
+function renderIRChart3D(monthData,maxIR,tGreen,tYellow,tRed){
   var chartH=200,barW=26,gap=14,depth=6;
-  var totalW=months.length*(barW*2+gap+10)+60;
-
-  function irToH(ir){if(!ir||ir<=0)return 0;return Math.min((ir/maxIR)*chartH,chartH);}
-  function bc(ir){return irBarColor(ir,tGreen,tYellow);}
-
+  var totalW=monthData.length*(barW*2+gap+10)+60;
+  function irToH(ir){if(!ir||ir<=0||isNaN(ir))return 0;return Math.min((ir/maxIR)*chartH,chartH);}
   var svg='';
-  // Y axis & grid
   for(var s=0;s<=5;s++){
     var yVal=(maxIR*s/5);
     var yPos=chartH-(yVal/maxIR)*chartH;
     svg+='<line x1="38" y1="'+yPos+'" x2="'+(totalW-10)+'" y2="'+yPos+'" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>';
     svg+='<text x="34" y="'+(yPos+4)+'" font-size="9" fill="#475569" text-anchor="end">'+yVal.toFixed(1)+'</text>';
   }
-  // Threshold lines
-  [{v:tGreen,c:'#10B981',l:'Safe'},{v:tYellow,c:'#F59E0B',l:'Caution'},{v:tRed,c:'#EF4444',l:'Danger'}].forEach(function(t){
+  [{v:tGreen,c:'#10B981',l:'Below ALOSP'},{v:tYellow,c:'#F59E0B',l:'ALOSP'},{v:tRed,c:'#EF4444',l:'Above ALOSP'}].forEach(function(t){
     if(t.v<=maxIR){
       var yp=chartH-(t.v/maxIR)*chartH;
       svg+='<line x1="38" y1="'+yp+'" x2="'+(totalW-10)+'" y2="'+yp+'" stroke="'+t.c+'" stroke-width="1" stroke-dasharray="4,4" opacity="0.45"/>';
       svg+='<text x="'+(totalW-8)+'" y="'+(yp+4)+'" font-size="9" fill="'+t.c+'" opacity="0.65">'+t.l+'</text>';
     }
   });
-
-  // Bars
-  internalIRs.forEach(function(d,i){
+  monthData.forEach(function(d,i){
     var x=42+i*(barW*2+gap+10);
-    var intH=irToH(d.ir);
-    var cumIR=cumMap[d.key]!==undefined?parseFloat(cumMap[d.key]):null;
-    var cumH=irToH(cumIR);
-    var intC=bc(d.ir);
-
-    // INTERNAL BAR
+    var intH=irToH(d.intIR);
+    var cumH=irToH(d.cumIR);
+    var intC=irBarColor(d.intIR,tGreen,tYellow);
     if(intH>0){
       var by=chartH-intH;
       svg+='<polygon points="'+x+','+by+' '+(x+barW)+','+by+' '+(x+barW-depth)+','+(by-depth)+' '+(x-depth)+','+(by-depth)+'" fill="'+intC+'" opacity="0.55"/>';
       svg+='<polygon points="'+(x+barW)+','+by+' '+(x+barW)+','+chartH+' '+(x+barW-depth)+','+(chartH-depth)+' '+(x+barW-depth)+','+(by-depth)+'" fill="'+intC+'" opacity="0.3"/>';
       svg+='<rect x="'+(x-depth)+'" y="'+(by-depth)+'" width="'+barW+'" height="'+intH+'" fill="'+intC+'" opacity="0.85"/>';
-      svg+='<text x="'+(x-depth+barW/2)+'" y="'+(by-depth-4)+'" font-size="9" fill="'+intC+'" text-anchor="middle" font-weight="700">'+d.ir.toFixed(2)+'</text>';
+      svg+='<text x="'+(x-depth+barW/2)+'" y="'+(by-depth-4)+'" font-size="9" fill="'+intC+'" text-anchor="middle" font-weight="700">'+d.intIR.toFixed(2)+'</text>';
     } else {
       svg+='<rect x="'+(x-depth)+'" y="'+(chartH-depth-1)+'" width="'+barW+'" height="2" fill="rgba(255,255,255,0.08)" rx="1"/>';
     }
-
-    // CUMULATIVE BAR
     var cx2=x+barW+4;
     if(cumH>0){
       var cy2=chartH-cumH;
       svg+='<polygon points="'+cx2+','+cy2+' '+(cx2+barW)+','+cy2+' '+(cx2+barW-depth)+','+(cy2-depth)+' '+(cx2-depth)+','+(cy2-depth)+'" fill="#8B5CF6" opacity="0.55"/>';
       svg+='<polygon points="'+(cx2+barW)+','+cy2+' '+(cx2+barW)+','+chartH+' '+(cx2+barW-depth)+','+(chartH-depth)+' '+(cx2+barW-depth)+','+(cy2-depth)+'" fill="#8B5CF6" opacity="0.3"/>';
       svg+='<rect x="'+(cx2-depth)+'" y="'+(cy2-depth)+'" width="'+barW+'" height="'+cumH+'" fill="#8B5CF6" opacity="0.78"/>';
-      svg+='<text x="'+(cx2-depth+barW/2)+'" y="'+(cy2-depth-4)+'" font-size="9" fill="#8B5CF6" text-anchor="middle" font-weight="700">'+cumIR.toFixed(2)+'</text>';
+      svg+='<text x="'+(cx2-depth+barW/2)+'" y="'+(cy2-depth-4)+'" font-size="9" fill="#8B5CF6" text-anchor="middle" font-weight="700">'+d.cumIR.toFixed(2)+'</text>';
     } else {
       svg+='<rect x="'+(cx2-depth)+'" y="'+(chartH-depth-1)+'" width="'+barW+'" height="2" fill="rgba(255,255,255,0.05)" rx="1"/>';
     }
     svg+='<text x="'+(x-depth+barW)+'" y="'+(chartH+16)+'" font-size="9" fill="#64748B" text-anchor="middle">'+d.label+'</text>';
   });
-
   return '<svg viewBox="0 0 '+(totalW+80)+' '+(chartH+28)+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible">'+svg+'</svg>';
 }
 
@@ -2097,15 +2201,13 @@ function irSaveSettings(){
 }
 function irOpenDataInput(){document.getElementById('ir-modal-data').style.display='flex';}
 function irSaveData(){
-  var s=irLoad(); s.departures=s.departures||{};
   var cumArr=[];
   document.querySelectorAll('#ir-modal-data input').forEach(function(inp){
     var key=inp.dataset.key,type=inp.dataset.type,val=inp.value.trim();
-    if(!key||!type)return;
-    if(type==='dep'&&val)s.departures[key]=parseFloat(val);
-    if(type==='cum'&&val)cumArr.push({key:key,ir:parseFloat(val)});
+    if(!key||!type||!val)return;
+    cumArr.push({key:key,type:type,ir:parseFloat(val)});
   });
-  irSave(s);irSaveCumulative(cumArr);
+  irSaveCumulative(cumArr);
   document.getElementById('ir-modal-data').style.display='none';renderIR();
 }
 
