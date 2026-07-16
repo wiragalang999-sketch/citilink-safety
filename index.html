@@ -187,7 +187,48 @@ try {
   <div id="view-map" style="display:none"></div>
 </div>
 
-<!-- MODALS -->
+<!-- RADAR LOCK SCREEN -->
+<div id="radar-lockscreen" style="display:none;position:fixed;inset:0;background:#020d08;z-index:99999;flex-direction:column;align-items:center;justify-content:center;cursor:pointer" onclick="dismissLockscreen()" onmousemove="resetIdleTimer()">
+  <div style="position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(transparent,rgba(0,255,136,0.15),transparent);animation:scanline 4s linear infinite"></div>
+  <div style="position:absolute;top:16px;left:16px;width:20px;height:20px;border-top:1px solid #00ff88;border-left:1px solid #00ff88;opacity:0.4"></div>
+  <div style="position:absolute;top:16px;right:16px;width:20px;height:20px;border-top:1px solid #00ff88;border-right:1px solid #00ff88;opacity:0.4"></div>
+  <div style="position:absolute;bottom:16px;left:16px;width:20px;height:20px;border-bottom:1px solid #00ff88;border-left:1px solid #00ff88;opacity:0.4"></div>
+  <div style="position:absolute;bottom:16px;right:16px;width:20px;height:20px;border-bottom:1px solid #00ff88;border-right:1px solid #00ff88;opacity:0.4"></div>
+
+  <div style="text-align:center;margin-bottom:1.5rem">
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:#00ff88;letter-spacing:3px;opacity:0.6;margin-bottom:6px">CITILINK SAFETY INVESTIGATION SYSTEM</div>
+    <div style="font-family:'DM Mono',monospace;font-size:26px;font-weight:500;color:#00ff88;letter-spacing:2px" id="ls-time">00:00</div>
+    <div style="font-family:'DM Mono',monospace;font-size:11px;color:#00bb66;letter-spacing:2px;margin-top:4px;opacity:0.7" id="ls-date">--</div>
+  </div>
+
+  <div style="position:relative;width:260px;height:260px;margin-bottom:1.5rem">
+    <canvas id="radar-canvas" width="260" height="260"></canvas>
+    <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#00ff88;border-radius:50%;box-shadow:0 0 8px #00ff88"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:300px;margin-bottom:1.5rem">
+    <div style="text-align:center;border:0.5px solid rgba(0,255,136,0.2);border-radius:6px;padding:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#00ff88" id="ls-active">0</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#00bb66;opacity:0.6;letter-spacing:1px;margin-top:3px">ACTIVE</div>
+    </div>
+    <div style="text-align:center;border:0.5px solid rgba(255,68,68,0.2);border-radius:6px;padding:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#ff4444" id="ls-overdue">0</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#ff4444;opacity:0.6;letter-spacing:1px;margin-top:3px">OVERDUE</div>
+    </div>
+    <div style="text-align:center;border:0.5px solid rgba(255,170,0,0.2);border-radius:6px;padding:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#ffaa00" id="ls-critical">0</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#ffaa00;opacity:0.6;letter-spacing:1px;margin-top:3px">CRITICAL</div>
+    </div>
+  </div>
+
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#00ff88;opacity:0.4;letter-spacing:2px;animation:lsblink 2s step-end infinite" id="ls-tap">CLICK ANYWHERE TO RESUME</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;color:#ff4444;opacity:0;letter-spacing:1px;margin-top:8px;animation:lsblink 0.8s step-end infinite" id="ls-alert"></div>
+</div>
+
+<style>
+@keyframes scanline{0%{top:0}100%{top:100%}}
+@keyframes lsblink{0%,100%{opacity:0.4}50%{opacity:0.1}}
+</style>
 <div id="modal-case" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCaseModal()"></div>
 <div id="modal-form" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeFormModal()"></div>
 
@@ -1741,6 +1782,199 @@ function renderAll(){
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
+// ── RADAR LOCK SCREEN ─────────────────────────────────────────────────────────
+var _idleTimer = null;
+var _idleTimeout = 3 * 60 * 1000; // 3 minutes
+var _radarRunning = false;
+var _radarAF = null;
+var _sweepAngle = 0;
+var _blipAlpha = [];
+var _blips = [];
+
+function resetIdleTimer() {
+  clearTimeout(_idleTimer);
+  _idleTimer = setTimeout(showLockscreen, _idleTimeout);
+}
+
+function showLockscreen() {
+  var ls = document.getElementById('radar-lockscreen');
+  if(!ls) return;
+  ls.style.display = 'flex';
+  updateLockscreenStats();
+  updateLockscreenTime();
+  startRadarAnimation();
+}
+
+function dismissLockscreen() {
+  var ls = document.getElementById('radar-lockscreen');
+  if(!ls) return;
+  ls.style.display = 'none';
+  if(_radarAF){ cancelAnimationFrame(_radarAF); _radarAF=null; _radarRunning=false; }
+  resetIdleTimer();
+}
+
+function updateLockscreenTime() {
+  var ls = document.getElementById('radar-lockscreen');
+  if(!ls || ls.style.display==='none') return;
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2,'0');
+  var mm = String(now.getMinutes()).padStart(2,'0');
+  var ss = String(now.getSeconds()).padStart(2,'0');
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var el = document.getElementById('ls-time');
+  var del = document.getElementById('ls-date');
+  if(el) el.textContent = hh+':'+mm+':'+ss;
+  if(del) del.textContent = days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+  setTimeout(updateLockscreenTime, 1000);
+}
+
+function updateLockscreenStats() {
+  var active = cases.filter(function(c){ return c.status!=='Closed'; }).length;
+  var overdue = cases.filter(function(c){
+    if(!c.dueDate||c.status==='Closed') return false;
+    return new Date(c.dueDate) < new Date();
+  }).length;
+  var critical = cases.filter(function(c){ return c.severity==='Critical'&&c.status!=='Closed'; }).length;
+  var el_a = document.getElementById('ls-active');
+  var el_o = document.getElementById('ls-overdue');
+  var el_c = document.getElementById('ls-critical');
+  if(el_a) el_a.textContent = active;
+  if(el_o) el_o.textContent = overdue;
+  if(el_c) el_c.textContent = critical;
+  var alert = document.getElementById('ls-alert');
+  if(alert){
+    if(overdue>0||critical>0){
+      alert.style.opacity='0.8';
+      var msgs = [];
+      if(overdue>0) msgs.push(overdue+' OVERDUE');
+      if(critical>0) msgs.push(critical+' CRITICAL');
+      alert.textContent = '⚠ '+msgs.join(' · ')+' — IMMEDIATE ATTENTION REQUIRED';
+    } else {
+      alert.style.opacity='0';
+    }
+  }
+
+  // Build blips from cases
+  _blips = cases.slice(0,12).map(function(c,i){
+    var angle = (i / Math.max(cases.length,1)) * Math.PI * 2;
+    var dist = 0.35 + (i%3)*0.2;
+    var color = c.severity==='Critical'?'#ff4444':c.severity==='High'?'#ffaa00':c.severity==='Medium'?'#ffdd00':'#00ff88';
+    return {angle:angle, dist:dist, label:c.id?c.id.slice(-7):('CASE-'+(i+1)), color:color};
+  });
+  _blipAlpha = _blips.map(function(){ return 0; });
+}
+
+function startRadarAnimation() {
+  if(_radarRunning) return;
+  _radarRunning = true;
+  var canvas = document.getElementById('radar-canvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W=260,H=260,CX=130,CY=130,R=115;
+
+  function draw() {
+    var ls = document.getElementById('radar-lockscreen');
+    if(!ls || ls.style.display==='none'){ _radarRunning=false; return; }
+
+    ctx.clearRect(0,0,W,H);
+
+    // Grid circles
+    ctx.strokeStyle='rgba(0,255,136,0.12)';
+    ctx.lineWidth=0.5;
+    [0.25,0.5,0.75,1].forEach(function(r){
+      ctx.beginPath(); ctx.arc(CX,CY,R*r,0,Math.PI*2); ctx.stroke();
+    });
+
+    // Cross hairs
+    ctx.strokeStyle='rgba(0,255,136,0.1)';
+    ctx.beginPath(); ctx.moveTo(CX-R-8,CY); ctx.lineTo(CX+R+8,CY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(CX,CY-R-8); ctx.lineTo(CX,CY+R+8); ctx.stroke();
+
+    // Sweep trail
+    for(var i=0;i<50;i++){
+      var a = _sweepAngle-(1.3*i/50);
+      var alpha = (1-i/50)*0.15;
+      ctx.beginPath();
+      ctx.moveTo(CX,CY);
+      ctx.arc(CX,CY,R,a,a+1.3/50);
+      ctx.closePath();
+      ctx.fillStyle='rgba(0,255,136,'+alpha+')';
+      ctx.fill();
+    }
+
+    // Sweep line
+    ctx.beginPath();
+    ctx.moveTo(CX,CY);
+    ctx.lineTo(CX+Math.cos(_sweepAngle)*(R+4), CY+Math.sin(_sweepAngle)*(R+4));
+    ctx.strokeStyle='#00ff88';
+    ctx.lineWidth=1.5;
+    ctx.stroke();
+
+    // Outer ring
+    ctx.beginPath();
+    ctx.arc(CX,CY,R+3,0,Math.PI*2);
+    ctx.strokeStyle='rgba(0,255,136,0.4)';
+    ctx.lineWidth=1;
+    ctx.stroke();
+
+    // Blips
+    _blips.forEach(function(b,i){
+      var bx = CX+Math.cos(b.angle)*R*b.dist;
+      var by = CY+Math.sin(b.angle)*R*b.dist;
+      var diff = (_sweepAngle-b.angle) % (Math.PI*2);
+      if(diff<0) diff+=Math.PI*2;
+      if(diff<0.12) _blipAlpha[i]=1;
+      else _blipAlpha[i]=Math.max(0,_blipAlpha[i]-0.006);
+      if(_blipAlpha[i]>0){
+        // Ripple
+        ctx.beginPath();
+        ctx.arc(bx,by,12*(1-_blipAlpha[i]*0.5),0,Math.PI*2);
+        ctx.strokeStyle=b.color;
+        ctx.globalAlpha=_blipAlpha[i]*0.25;
+        ctx.lineWidth=1;
+        ctx.stroke();
+        ctx.globalAlpha=1;
+        // Dot
+        ctx.beginPath();
+        ctx.arc(bx,by,3.5,0,Math.PI*2);
+        ctx.fillStyle=b.color;
+        ctx.globalAlpha=_blipAlpha[i];
+        ctx.fill();
+        ctx.globalAlpha=1;
+        // Label
+        if(_blipAlpha[i]>0.4){
+          ctx.fillStyle=b.color;
+          ctx.font='8px monospace';
+          ctx.globalAlpha=_blipAlpha[i]*0.75;
+          ctx.fillText(b.label,bx+6,by-5);
+          ctx.globalAlpha=1;
+        }
+      }
+    });
+
+    // Center pulse
+    var pulse=0.5+0.5*Math.sin(Date.now()/400);
+    ctx.beginPath();
+    ctx.arc(CX,CY,4+pulse*2,0,Math.PI*2);
+    ctx.fillStyle='#00ff88';
+    ctx.globalAlpha=0.6+pulse*0.4;
+    ctx.fill();
+    ctx.globalAlpha=1;
+
+    _sweepAngle+=0.018;
+    if(_sweepAngle>Math.PI*2) _sweepAngle-=Math.PI*2;
+    _radarAF = requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// Init idle detection
+['mousemove','keydown','click','scroll','touchstart'].forEach(function(evt){
+  document.addEventListener(evt, resetIdleTimer, {passive:true});
+});
+resetIdleTimer();
+
 loadData();
 setView("dashboard");
 startFirestoreSync();
