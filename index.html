@@ -225,8 +225,15 @@ try {
     </div>
   </div>
 
-  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#00ff88;opacity:0.4;letter-spacing:2px;animation:lsblink 2s step-end infinite" id="ls-tap">CLICK ANYWHERE TO RESUME</div>
-  <div style="font-family:'DM Mono',monospace;font-size:10px;color:#ff4444;opacity:0;letter-spacing:1px;margin-top:8px;animation:lsblink 0.8s step-end infinite" id="ls-alert"></div>
+  <div style="font-family:'DM Mono',monospace;font-size:11px;color:#00ff88;opacity:0.4;letter-spacing:2px;animation:lsblink 2s step-end infinite;margin-top:1rem" id="ls-tap">CLICK ANYWHERE TO RESUME</div>
+  <div style="font-family:'DM Mono',monospace;font-size:10px;color:#ff4444;opacity:0;letter-spacing:1px;margin-top:6px;animation:lsblink 0.8s step-end infinite" id="ls-alert"></div>
+
+  <!-- PULSE LINE -->
+  <div style="width:100%;max-width:500px;margin-top:1.25rem;padding:0 1.5rem">
+    <div style="font-family:'DM Mono',monospace;font-size:9px;color:rgba(0,255,136,0.35);letter-spacing:2px;margin-bottom:5px;text-align:center">MONTHLY OCCURRENCE PULSE</div>
+    <canvas id="pulse-canvas" width="500" height="56" style="width:100%;display:block"></canvas>
+    <div style="display:flex;justify-content:space-between;margin-top:3px" id="pulse-labels"></div>
+  </div>
 </div>
 
 <style>
@@ -1786,7 +1793,148 @@ function renderAll(){
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
-// ── RADAR LOCK SCREEN ─────────────────────────────────────────────────────────
+// ── PULSE LINE ────────────────────────────────────────────────────────────────
+var _pulseAF = null;
+var _pulseOffset = 0;
+
+function buildMonthlyData() {
+  var months = {};
+  cases.forEach(function(c) {
+    if(!c.date) return;
+    var key = c.date.slice(0,7);
+    months[key] = (months[key]||0) + 1;
+  });
+  var result = [];
+  var now = new Date();
+  for(var i=11; i>=0; i--) {
+    var d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    var k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    var mn = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    result.push({month: mn[d.getMonth()], count: months[k]||0});
+  }
+  return result;
+}
+
+function buildEKGPoints(data, W, H) {
+  var maxVal = Math.max.apply(null, data.map(function(d){return d.count;})) || 1;
+  var points = [];
+  var segW = W / data.length;
+  var baseY = H * 0.75;
+
+  data.forEach(function(d, i) {
+    var x0 = i * segW;
+    var norm = d.count / maxVal;
+
+    // Flat baseline before spike
+    points.push({x: x0, y: baseY});
+    points.push({x: x0 + segW*0.25, y: baseY});
+
+    if(d.count > 0) {
+      // Small pre-dip
+      points.push({x: x0 + segW*0.3, y: baseY + 4});
+      // Main spike UP — height by count
+      points.push({x: x0 + segW*0.38, y: baseY - norm*(H*0.62)});
+      // Sharp drop below baseline
+      points.push({x: x0 + segW*0.46, y: baseY + norm*10});
+      // Recovery bump
+      points.push({x: x0 + segW*0.55, y: baseY - norm*6});
+      // Return to baseline
+      points.push({x: x0 + segW*0.65, y: baseY});
+    }
+    points.push({x: x0 + segW, y: baseY});
+  });
+  return points;
+}
+
+function startPulseAnimation() {
+  if(_pulseAF) { cancelAnimationFrame(_pulseAF); _pulseAF=null; }
+  var canvas = document.getElementById('pulse-canvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+
+  var data = buildMonthlyData();
+  var pts = buildEKGPoints(data, W, H);
+  var maxCount = Math.max.apply(null, data.map(function(d){return d.count;})) || 1;
+
+  // Build month labels
+  var labelEl = document.getElementById('pulse-labels');
+  if(labelEl) {
+    labelEl.innerHTML = data.map(function(d){
+      return '<span style="font-family:DM Mono,monospace;font-size:8px;color:rgba(0,255,136,0.3);letter-spacing:0;flex:1;text-align:center">'+d.month+'</span>';
+    }).join('');
+  }
+
+  function draw() {
+    var ls = document.getElementById('radar-lockscreen');
+    if(!ls || ls.style.display==='none') { _pulseAF=null; return; }
+
+    ctx.clearRect(0, 0, W, H);
+
+    // Dim baseline grid
+    ctx.strokeStyle = 'rgba(0,255,136,0.06)';
+    ctx.lineWidth = 0.5;
+    ctx.setLineDash([3,5]);
+    ctx.beginPath(); ctx.moveTo(0, H*0.75); ctx.lineTo(W, H*0.75); ctx.stroke();
+    ctx.setLineDash([]);
+
+    var scanX = _pulseOffset % W;
+
+    // Draw EKG line with alpha fade behind scan head
+    ctx.lineWidth = 1.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    pts.forEach(function(pt, i) {
+      if(i === 0) return;
+      var prev = pts[i-1];
+      var distFromScan = (scanX - pt.x + W) % W;
+      // Fade: bright just behind scan, dim further back, invisible ahead
+      var alpha;
+      if(pt.x > scanX) {
+        alpha = 0.04; // ahead of scan = almost invisible
+      } else {
+        var age = scanX - pt.x;
+        alpha = Math.max(0.04, 0.75 - (age / W) * 0.72);
+      }
+      // Color based on spike height
+      var norm = Math.abs(H*0.75 - pt.y) / (H*0.62);
+      var r = Math.round(norm > 0.5 ? 255 : norm > 0.2 ? 180 : 0);
+      var g = Math.round(norm > 0.5 ? 100 : 255);
+      var b = Math.round(norm > 0.5 ? 0 : 136);
+
+      ctx.beginPath();
+      ctx.moveTo(prev.x, prev.y);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.strokeStyle = 'rgba('+r+','+g+','+b+','+alpha+')';
+      ctx.stroke();
+    });
+
+    // Glowing scan head
+    var grad = ctx.createLinearGradient(Math.max(0,scanX-50), 0, scanX+2, 0);
+    grad.addColorStop(0, 'rgba(0,255,136,0)');
+    grad.addColorStop(0.6, 'rgba(0,255,136,0.08)');
+    grad.addColorStop(1, 'rgba(0,255,136,0.25)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(Math.max(0,scanX-50), 0, 52, H);
+
+    // Bright dot at scan head — find nearest Y
+    var nearPt = pts.reduce(function(a,b){
+      return Math.abs(a.x-scanX)<Math.abs(b.x-scanX)?a:b;
+    });
+    ctx.beginPath();
+    ctx.arc(scanX, nearPt.y, 2.5, 0, Math.PI*2);
+    ctx.fillStyle = '#00ff88';
+    ctx.globalAlpha = 0.9;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    _pulseOffset += 0.9;
+    if(_pulseOffset > W) _pulseOffset = 0;
+    _pulseAF = requestAnimationFrame(draw);
+  }
+  draw();
+}
 var _idleTimer = null;
 var _idleTimeout = 3 * 60 * 1000; // 3 minutes
 var _radarRunning = false;
@@ -1807,6 +1955,7 @@ function showLockscreen() {
   updateLockscreenStats();
   updateLockscreenTime();
   startRadarAnimation();
+  startPulseAnimation();
 }
 
 function dismissLockscreen() {
@@ -1814,6 +1963,7 @@ function dismissLockscreen() {
   if(!ls) return;
   ls.style.display = 'none';
   if(_radarAF){ cancelAnimationFrame(_radarAF); _radarAF=null; _radarRunning=false; }
+  if(_pulseAF){ cancelAnimationFrame(_pulseAF); _pulseAF=null; }
   resetIdleTimer();
 }
 
