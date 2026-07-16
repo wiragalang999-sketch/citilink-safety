@@ -206,18 +206,22 @@ try {
     <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:8px;height:8px;background:#00ff88;border-radius:50%;box-shadow:0 0 8px #00ff88"></div>
   </div>
 
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;width:100%;max-width:300px;margin-bottom:1.5rem">
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:100%;max-width:380px;margin-bottom:1.5rem">
     <div style="text-align:center;border:0.5px solid rgba(0,255,136,0.2);border-radius:6px;padding:10px">
       <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#00ff88" id="ls-active">0</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#00bb66;opacity:0.6;letter-spacing:1px;margin-top:3px">ACTIVE</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#00bb66;opacity:0.6;letter-spacing:1px;margin-top:3px">TOTAL</div>
     </div>
-    <div style="text-align:center;border:0.5px solid rgba(255,68,68,0.2);border-radius:6px;padding:10px">
-      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#ff4444" id="ls-overdue">0</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#ff4444;opacity:0.6;letter-spacing:1px;margin-top:3px">OVERDUE</div>
+    <div style="text-align:center;border:0.5px solid rgba(239,68,68,0.2);border-radius:6px;padding:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#ef4444" id="ls-overdue">0</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#ef4444;opacity:0.6;letter-spacing:1px;margin-top:3px">ACCIDENT</div>
     </div>
     <div style="text-align:center;border:0.5px solid rgba(255,170,0,0.2);border-radius:6px;padding:10px">
       <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#ffaa00" id="ls-critical">0</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#ffaa00;opacity:0.6;letter-spacing:1px;margin-top:3px">CRITICAL</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#ffaa00;opacity:0.6;letter-spacing:1px;margin-top:3px">INCIDENT</div>
+    </div>
+    <div style="text-align:center;border:0.5px solid rgba(59,130,246,0.2);border-radius:6px;padding:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:#3b82f6" id="ls-precursor">0</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:#3b82f6;opacity:0.6;letter-spacing:1px;margin-top:3px">PRECURSOR</div>
     </div>
   </div>
 
@@ -1817,52 +1821,53 @@ function updateLockscreenTime() {
   var ls = document.getElementById('radar-lockscreen');
   if(!ls || ls.style.display==='none') return;
   var now = new Date();
-  var hh = String(now.getHours()).padStart(2,'0');
-  var mm = String(now.getMinutes()).padStart(2,'0');
-  var ss = String(now.getSeconds()).padStart(2,'0');
+  var hh = String(now.getUTCHours()).padStart(2,'0');
+  var mm = String(now.getUTCMinutes()).padStart(2,'0');
+  var ss = String(now.getUTCSeconds()).padStart(2,'0');
   var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var el = document.getElementById('ls-time');
   var del = document.getElementById('ls-date');
-  if(el) el.textContent = hh+':'+mm+':'+ss;
-  if(del) del.textContent = days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+  if(el) el.textContent = hh+':'+mm+':'+ss+' UTC';
+  if(del) del.textContent = days[now.getUTCDay()]+', '+now.getUTCDate()+' '+months[now.getUTCMonth()]+' '+now.getUTCFullYear();
   setTimeout(updateLockscreenTime, 1000);
 }
 
 function updateLockscreenStats() {
-  var active = cases.filter(function(c){ return c.status!=='Closed'; }).length;
+  var total = cases.length;
+  var accident = cases.filter(function(c){ return c.type==='Accident'; }).length;
+  var incident = cases.filter(function(c){ return c.type==='Serious Incident'||c.type==='Incident'; }).length;
+  var precursor = cases.filter(function(c){ return c.type==='Precursor'; }).length;
+  var el_a = document.getElementById('ls-active');
+  var el_o = document.getElementById('ls-overdue');
+  var el_c = document.getElementById('ls-critical');
+  var el_p = document.getElementById('ls-precursor');
+  if(el_a) el_a.textContent = total;
+  if(el_o) el_o.textContent = accident;
+  if(el_c) el_c.textContent = incident;
+  if(el_p) el_p.textContent = precursor;
+  var alert = document.getElementById('ls-alert');
   var overdue = cases.filter(function(c){
     if(!c.dueDate||c.status==='Closed') return false;
     return new Date(c.dueDate) < new Date();
   }).length;
   var critical = cases.filter(function(c){ return c.severity==='Critical'&&c.status!=='Closed'; }).length;
-  var el_a = document.getElementById('ls-active');
-  var el_o = document.getElementById('ls-overdue');
-  var el_c = document.getElementById('ls-critical');
-  if(el_a) el_a.textContent = active;
-  if(el_o) el_o.textContent = overdue;
-  if(el_c) el_c.textContent = critical;
-  var alert = document.getElementById('ls-alert');
   if(alert){
     if(overdue>0||critical>0){
       alert.style.opacity='0.8';
-      var msgs = [];
+      var msgs=[];
       if(overdue>0) msgs.push(overdue+' OVERDUE');
       if(critical>0) msgs.push(critical+' CRITICAL');
-      alert.textContent = '⚠ '+msgs.join(' · ')+' — IMMEDIATE ATTENTION REQUIRED';
-    } else {
-      alert.style.opacity='0';
-    }
+      alert.textContent='⚠ '+msgs.join(' · ')+' — IMMEDIATE ATTENTION REQUIRED';
+    } else { alert.style.opacity='0'; }
   }
-
-  // Build blips from cases
   _blips = cases.slice(0,12).map(function(c,i){
-    var angle = (i / Math.max(cases.length,1)) * Math.PI * 2;
-    var dist = 0.35 + (i%3)*0.2;
-    var color = c.severity==='Critical'?'#ff4444':c.severity==='High'?'#ffaa00':c.severity==='Medium'?'#ffdd00':'#00ff88';
-    return {angle:angle, dist:dist, label:c.id?c.id.slice(-7):('CASE-'+(i+1)), color:color};
+    var angle=(i/Math.max(cases.length,1))*Math.PI*2;
+    var dist=0.35+(i%3)*0.2;
+    var color=c.severity==='Critical'?'#ff4444':c.severity==='High'?'#ffaa00':c.severity==='Medium'?'#ffdd00':'#00ff88';
+    return {angle:angle,dist:dist,label:c.id?c.id.slice(-7):('CASE-'+(i+1)),color:color};
   });
-  _blipAlpha = _blips.map(function(){ return 0; });
+  _blipAlpha=_blips.map(function(){return 0;});
 }
 
 function startRadarAnimation() {
