@@ -1804,6 +1804,7 @@ var IR_CUMULATIVE_KEY = 'ci_ir_cumulative';
 var _irSettings = {};
 var _irCumulative = [];
 var _irLoaded = false;
+var _irSyncOK = null; // null=belum diketahui, true=tersambung, false=gagal (cek console + Firestore rules)
 
 // ── Firestore IR sync ──────────────────────────────────────────────────────────
 function irInitFirestore(){
@@ -1813,14 +1814,25 @@ function irInitFirestore(){
     if(doc.exists){ _irSettings = doc.data()||{}; }
     else { _irSettings = {}; }
     _irLoaded = true;
+    _irSyncOK = true;
     if(currentView==='ir') renderIR();
-  }, function(){ irLoadFromLocal(); });
+  }, function(err){
+    console.error('❌ IR Firestore sync error (settings) — cek Firestore Security Rules:',err);
+    _irSyncOK = false;
+    irLoadFromLocal();
+    if(currentView==='ir') renderIR();
+  });
   // Listen real-time to cumulative data
   window._fbDB.collection('ir_config').doc('cumulative').onSnapshot(function(doc){
     if(doc.exists){ _irCumulative = doc.data().entries||[]; }
     else { _irCumulative = []; }
+    _irSyncOK = true;
     if(currentView==='ir') renderIR();
-  }, function(){});
+  }, function(err){
+    console.error('❌ IR Firestore sync error (cumulative) — cek Firestore Security Rules:',err);
+    _irSyncOK = false;
+    if(currentView==='ir') renderIR();
+  });
 }
 
 function irLoadFromLocal(){
@@ -1838,8 +1850,13 @@ function irSave(d){
   try{ localStorage.setItem(IR_STORAGE_KEY,JSON.stringify(d)); }catch(e){}
   // Save to Firestore
   if(window._fbDB){
-    window._fbDB.collection('ir_config').doc('settings').set(d).catch(function(e){
-      console.warn('IR settings Firestore save failed:',e);
+    window._fbDB.collection('ir_config').doc('settings').set(d).then(function(){
+      _irSyncOK=true;
+    }).catch(function(e){
+      console.error('❌ IR settings Firestore save failed — cek Firestore Security Rules:',e);
+      _irSyncOK=false;
+      alert('⚠️ Gagal simpan ke server (shared database). Data hanya tersimpan lokal di browser ini dan TIDAK terlihat oleh investigator lain.\n\nError: '+(e&&e.message?e.message:e));
+      if(currentView==='ir') renderIR();
     });
   }
 }
@@ -1848,8 +1865,13 @@ function irSaveCumulative(arr){
   _irCumulative=arr;
   try{ localStorage.setItem(IR_CUMULATIVE_KEY,JSON.stringify(arr)); }catch(e){}
   if(window._fbDB){
-    window._fbDB.collection('ir_config').doc('cumulative').set({entries:arr}).catch(function(e){
-      console.warn('IR cumulative Firestore save failed:',e);
+    window._fbDB.collection('ir_config').doc('cumulative').set({entries:arr}).then(function(){
+      _irSyncOK=true;
+    }).catch(function(e){
+      console.error('❌ IR cumulative Firestore save failed — cek Firestore Security Rules:',e);
+      _irSyncOK=false;
+      alert('⚠️ Gagal simpan ke server (shared database). Data hanya tersimpan lokal di browser ini dan TIDAK terlihat oleh investigator lain.\n\nError: '+(e&&e.message?e.message:e));
+      if(currentView==='ir') renderIR();
     });
   }
 }
@@ -1933,9 +1955,11 @@ function renderIR(){
   var intVals=monthData.filter(function(d){return d.intIR!==null;}).map(function(d){return d.intIR;});
   var avgInt=intVals.length?(intVals.reduce(function(a,b){return a+b;},0)/intVals.length):null;
 
-  var syncStatus=window._fbDB
-    ?'<span style="color:#10B981">✅ Synced — shared with all investigators</span>'
-    :'<span style="color:#F59E0B">⚠️ Offline mode</span>';
+  var syncStatus=(_irSyncOK===false)
+    ?'<span style="color:#EF4444">❌ Sync error — data hanya tersimpan lokal di browser ini. Cek console (F12) &amp; Firestore Rules</span>'
+    :(window._fbDB
+      ?'<span style="color:#10B981">✅ Synced — shared with all investigators</span>'
+      :'<span style="color:#F59E0B">⚠️ Offline mode</span>');
 
   el.innerHTML=''
   // HEADER
