@@ -1884,26 +1884,37 @@ function renderIR(){
   }
 
   var settings=irLoad();
-  var rawData=irLoadCumulative(); // [{key,type,ir}] or [{key,type:'fh',ir:value}]
+  var rawData=irLoadCumulative(); // [{key,type,ir}] — type: internal/external/cumulative = occurrence count, departures = flight departures count
   var months=getLast12Months();
   var alosp=parseFloat(settings.alosp||1.0);
 
-  // Build maps
-  var intMap={},extMap={},cumMap={},fhMap={};
+  // Build maps (raw occurrence counts + flight departures — IR dihitung otomatis)
+  var intOccMap={},extOccMap={},cumOccMap={},depMap={};
   (rawData||[]).forEach(function(r){
-    if(r.type==='internal') intMap[r.key]=parseFloat(r.ir);
-    else if(r.type==='external') extMap[r.key]=parseFloat(r.ir);
-    else if(r.type==='cumulative') cumMap[r.key]=parseFloat(r.ir);
-    else if(r.type==='fh') fhMap[r.key]=parseFloat(r.ir);
+    if(r.type==='internal') intOccMap[r.key]=parseFloat(r.ir);
+    else if(r.type==='external') extOccMap[r.key]=parseFloat(r.ir);
+    else if(r.type==='cumulative') cumOccMap[r.key]=parseFloat(r.ir);
+    else if(r.type==='departures'||r.type==='fh') depMap[r.key]=parseFloat(r.ir);
   });
 
+  // Formula: IR = (jumlah occurrence x 1000) / flight departures
+  function occToIR(occ,dep){
+    if(occ==null||isNaN(occ)||dep==null||isNaN(dep)||dep<=0) return null;
+    return (occ*1000)/dep;
+  }
+
   var monthData=months.map(function(m){
+    var dep=depMap[m.key]!=null?depMap[m.key]:null;
+    var intOcc=intOccMap[m.key]!=null?intOccMap[m.key]:null;
+    var extOcc=extOccMap[m.key]!=null?extOccMap[m.key]:null;
+    var cumOcc=cumOccMap[m.key]!=null?cumOccMap[m.key]:null;
     return{
       key:m.key, label:m.label,
-      intIR: intMap[m.key]!=null?intMap[m.key]:null,
-      extIR: extMap[m.key]!=null?extMap[m.key]:null,
-      cumIR: cumMap[m.key]!=null?cumMap[m.key]:null,
-      fh:    fhMap[m.key]!=null?fhMap[m.key]:null,
+      intOcc:intOcc, extOcc:extOcc, cumOcc:cumOcc, dep:dep,
+      intIR: occToIR(intOcc,dep),
+      extIR: occToIR(extOcc,dep),
+      cumIR: occToIR(cumOcc,dep),
+      fh:    dep,
     };
   });
 
@@ -1928,7 +1939,7 @@ function renderIR(){
   // HEADER
   +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">'
   +'<div><div style="font-size:18px;font-weight:800;color:#F1F5F9;font-family:Arial Black,sans-serif">📉 Incident Rate Monitor</div>'
-  +'<div style="font-size:12px;color:#64748B;margin-top:2px">Formula: (Occurrences × 1,000) ÷ Flight Hours · '+syncStatus+'</div></div>'
+  +'<div style="font-size:12px;color:#64748B;margin-top:2px">Formula: (Occurrences × 1,000) ÷ Flight Departures · '+syncStatus+'</div></div>'
   +'<div style="display:flex;gap:8px">'
   +'<button onclick="irOpenSettings()" style="background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.3);border-radius:8px;color:#3B82F6;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">⚙️ ALOSP Setting</button>'
   +'<button onclick="irOpenDataInput()" style="background:rgba(0,166,81,.12);border:1px solid rgba(0,166,81,.3);border-radius:8px;color:#00A651;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer">✏️ Edit Data</button>'
@@ -1943,7 +1954,7 @@ function renderIR(){
   +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px">'
   +['Internal','External','Cumulative','Avg Internal'].map(function(lbl,i){
     var ir=[lastM.intIR,lastM.extIR,lastM.cumIR,avgInt][i];
-    var sub=['Latest · Manual','Latest · Manual','Latest · Manual','12-Month Rolling'][i];
+    var sub=['Latest · Auto-calc','Latest · Auto-calc','Latest · Auto-calc','12-Month Rolling'][i];
     return '<div class="card" style="text-align:center;padding:16px">'
       +'<div style="font-size:10px;color:#64748B;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">'+lbl+' IR</div>'
       +'<div style="font-size:26px;font-weight:800;color:'+irBarColor(ir,alosp)+'">'+(ir!==null?ir.toFixed(3):'—')+'</div>'
@@ -1970,7 +1981,7 @@ function renderIR(){
   +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:700px">'
   +'<thead><tr style="border-bottom:1px solid rgba(255,255,255,.08)">'
   +'<th style="text-align:left;padding:8px 10px;font-size:10px;font-weight:700;color:#475569;text-transform:uppercase">Month</th>'
-  +'<th style="text-align:center;padding:8px 10px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase">Flight Hours</th>'
+  +'<th style="text-align:center;padding:8px 10px;font-size:10px;font-weight:700;color:#64748B;text-transform:uppercase">Flight Departures</th>'
   +'<th style="text-align:center;padding:8px 10px;font-size:10px;font-weight:700;color:#3B82F6;text-transform:uppercase">Internal IR</th>'
   +'<th style="text-align:center;padding:8px 10px;font-size:10px;font-weight:700;color:#F59E0B;text-transform:uppercase">External IR</th>'
   +'<th style="text-align:center;padding:8px 10px;font-size:10px;font-weight:700;color:#8B5CF6;text-transform:uppercase">Cumulative IR</th>'
@@ -2003,31 +2014,31 @@ function renderIR(){
   // DATA INPUT MODAL
   +'<div id="ir-modal-data" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:10001;align-items:center;justify-content:center;padding:20px;overflow-y:auto">'
   +'<div style="background:#0D1526;border:1px solid rgba(255,255,255,.1);border-radius:16px;width:100%;max-width:680px;padding:24px;margin:auto">'
-  +'<h3 style="font-size:15px;font-weight:800;color:#F1F5F9;margin-bottom:4px">✏️ Edit Monthly IR Data</h3>'
-  +'<p style="font-size:12px;color:#64748B;margin-bottom:14px">Input data IR per bulan. Semua data diinput manual.</p>'
+  +'<h3 style="font-size:15px;font-weight:800;color:#F1F5F9;margin-bottom:4px">✏️ Edit Monthly Occurrence Data</h3>'
+  +'<p style="font-size:12px;color:#64748B;margin-bottom:14px">Input <strong>jumlah occurrence</strong> (bukan IR langsung) dan <strong>flight departures</strong> per bulan. IR dihitung otomatis: (occurrence × 1.000) ÷ flight departures.</p>'
   +'<table style="width:100%;border-collapse:collapse;font-size:12px">'
   +'<thead><tr style="border-bottom:1px solid rgba(255,255,255,.08)">'
   +'<th style="text-align:left;padding:6px 8px;font-size:10px;color:#475569;text-transform:uppercase;min-width:60px">Month</th>'
-  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#64748B;text-transform:uppercase">Flight Hours</th>'
-  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#3B82F6;text-transform:uppercase">Internal IR</th>'
-  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#F59E0B;text-transform:uppercase">External IR</th>'
-  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#8B5CF6;text-transform:uppercase">Cumulative IR</th>'
+  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#64748B;text-transform:uppercase">Flight Departures</th>'
+  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#3B82F6;text-transform:uppercase">Internal Occ.</th>'
+  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#F59E0B;text-transform:uppercase">External Occ.</th>'
+  +'<th style="text-align:center;padding:6px 8px;font-size:10px;color:#8B5CF6;text-transform:uppercase">Cumulative Occ.</th>'
   +'</tr></thead><tbody>'
   +months.map(function(m){
-    var iv=intMap[m.key]!=null?intMap[m.key]:'';
-    var ev=extMap[m.key]!=null?extMap[m.key]:'';
-    var cv=cumMap[m.key]!=null?cumMap[m.key]:'';
-    var fv=fhMap[m.key]!=null?fhMap[m.key]:'';
-    var inp=function(type,val,color){
-      return '<td style="padding:4px 5px"><input type="number" data-key="'+m.key+'" data-type="'+type+'" step="0.0001" value="'+val+'" placeholder="—" style="width:100%;background:rgba('+color+');border:1px solid rgba('+color.replace('0.07','0.25')+')'
+    var iv=intOccMap[m.key]!=null?intOccMap[m.key]:'';
+    var ev=extOccMap[m.key]!=null?extOccMap[m.key]:'';
+    var cv=cumOccMap[m.key]!=null?cumOccMap[m.key]:'';
+    var fv=depMap[m.key]!=null?depMap[m.key]:'';
+    var inp=function(type,val,color,step){
+      return '<td style="padding:4px 5px"><input type="number" data-key="'+m.key+'" data-type="'+type+'" step="'+(step||1)+'" value="'+val+'" placeholder="—" style="width:100%;background:rgba('+color+');border:1px solid rgba('+color.replace('0.07','0.25')+')'
       +';border-radius:6px;color:#E2E8F0;padding:5px 6px;font-size:11px;text-align:center;outline:none"></td>';
     };
     return '<tr style="border-bottom:1px solid rgba(255,255,255,.04)">'
       +'<td style="padding:6px 8px;color:#E2E8F0;font-weight:600;white-space:nowrap">'+m.label+'</td>'
-      +inp('fh',fv,'59,130,246,0.07')
-      +inp('internal',iv,'59,130,246,0.07')
-      +inp('external',ev,'245,158,11,0.07')
-      +inp('cumulative',cv,'139,92,246,0.07')
+      +inp('departures',fv,'59,130,246,0.07',1)
+      +inp('internal',iv,'59,130,246,0.07',1)
+      +inp('external',ev,'245,158,11,0.07',1)
+      +inp('cumulative',cv,'139,92,246,0.07',1)
       +'</tr>';
   }).join('')
   +'</tbody></table>'
