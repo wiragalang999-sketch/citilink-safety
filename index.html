@@ -97,6 +97,8 @@ body.light-mode [style*="color:#475569"]{color:#334155!important}
 /* SVG chart */
 body.light-mode svg text{fill:#334155!important}
 body.light-mode svg line{stroke:rgba(0,0,0,0.08)!important}
+body.light-mode svg line.alosp-line{stroke:#DC2626!important}
+body.light-mode svg text.alosp-label{fill:#FFFFFF!important}
 
 #login-screen{position:fixed;inset:0;background:linear-gradient(135deg,#000000 0%,#0a1a0a 30%,#0d2b0d 60%,#001a00 100%);display:flex;align-items:center;justify-content:center;z-index:9999;overflow:hidden}
 #login-screen::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 50%,rgba(0,166,81,0.15) 0%,transparent 50%),radial-gradient(ellipse at 80% 50%,rgba(255,215,0,0.08) 0%,transparent 50%);pointer-events:none}
@@ -2049,16 +2051,20 @@ function renderIR(){
 }
 
 function renderIRChart3D(monthData,maxIR,alosp){
-  var chartH=200,barW=18,gap=6,topPad=22;
+  var chartH=200,barW=18,gap=6,topPad=22,depth=6;
   var groupW=barW*3+gap*2+10;
-  var totalW=monthData.length*groupW+60;
+  var totalW=monthData.length*groupW+60+depth;
   function irToH(ir){if(!ir||ir<=0||isNaN(ir))return 0;return Math.min((ir/maxIR)*chartH,chartH);}
   function bar(x,h,fillId,strokeColor,val){
     if(h<=0)return '<rect x="'+x+'" y="'+(chartH-2)+'" width="'+barW+'" height="2" rx="1" fill="rgba(255,255,255,0.08)"/>';
-    var by=chartH-h;
+    var groundY=chartH,topY=chartH-h;
+    var fx=x-depth,fy=topY-depth; // front face digeser naik-kiri untuk efek 3D
     var r=Math.min(4,h);
-    return '<path d="M'+x+','+chartH+' L'+x+','+(by+r)+' Q'+x+','+by+' '+(x+r)+','+by+' L'+(x+barW-r)+','+by+' Q'+(x+barW)+','+by+' '+(x+barW)+','+(by+r)+' L'+(x+barW)+','+chartH+' Z" fill="'+fillId+'" stroke="'+strokeColor+'" stroke-width="0.75"/>'
-      +'<text x="'+(x+barW/2)+'" y="'+(by-6)+'" font-size="10" font-weight="700" fill="'+strokeColor+'" text-anchor="middle" font-family="DM Mono,monospace">'+val.toFixed(2)+'</text>';
+    var topFace='<polygon points="'+x+','+topY+' '+(x+barW)+','+topY+' '+(x+barW-depth)+','+(topY-depth)+' '+(x-depth)+','+(topY-depth)+'" fill="rgba(255,255,255,0.22)"/>';
+    var sideFace='<polygon points="'+(x+barW)+','+topY+' '+(x+barW)+','+groundY+' '+(x+barW-depth)+','+(groundY-depth)+' '+(x+barW-depth)+','+(topY-depth)+'" fill="rgba(0,0,0,0.28)"/>';
+    var frontFace='<path d="M'+fx+','+groundY+' L'+fx+','+(fy+r)+' Q'+fx+','+fy+' '+(fx+r)+','+fy+' L'+(fx+barW-r)+','+fy+' Q'+(fx+barW)+','+fy+' '+(fx+barW)+','+(fy+r)+' L'+(fx+barW)+','+groundY+' Z" fill="'+fillId+'" stroke="'+strokeColor+'" stroke-width="0.75"/>';
+    var label='<text x="'+(fx+barW/2)+'" y="'+(fy-6)+'" font-size="10" font-weight="700" fill="'+strokeColor+'" text-anchor="middle" font-family="DM Mono,monospace">'+val.toFixed(2)+'</text>';
+    return topFace+sideFace+frontFace+label;
   }
   var defs='<defs>'
     +'<linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#60A5FA"/><stop offset="100%" stop-color="#1D4ED8"/></linearGradient>'
@@ -2071,24 +2077,24 @@ function renderIRChart3D(monthData,maxIR,alosp){
     svg+='<line x1="38" y1="'+yp+'" x2="'+(totalW)+'" y2="'+yp+'" stroke="rgba(255,255,255,0.05)" stroke-width="1" stroke-dasharray="2,3"/>';
     svg+='<text x="34" y="'+(yp+4)+'" font-size="9" fill="#475569" text-anchor="end" font-family="DM Mono,monospace">'+yv.toFixed(1)+'</text>';
   }
-  // ALOSP line — merah, tegas, dengan label nilai pasti sesuai input
+  // ALOSP line — merah tegas di dark & light mode, dengan label nilai pasti sesuai input
   if(alosp<=maxIR){
     var alY=topPad+chartH-(alosp/maxIR)*chartH;
-    svg+='<line x1="38" y1="'+alY+'" x2="'+(totalW-2)+'" y2="'+alY+'" stroke="#EF4444" stroke-width="2" stroke-dasharray="7,4"/>';
+    svg+='<line class="alosp-line" x1="38" y1="'+alY+'" x2="'+(totalW-2)+'" y2="'+alY+'" stroke="#EF4444" stroke-width="2.5" stroke-dasharray="7,4"/>';
     var lbl='ALOSP '+alosp.toFixed(2);
     var lblW=lbl.length*5.6+14;
-    svg+='<rect x="'+(totalW-lblW+2)+'" y="'+(alY-9)+'" width="'+lblW+'" height="18" rx="9" fill="#EF4444"/>'
-      +'<text x="'+(totalW-lblW/2+2)+'" y="'+(alY+4)+'" font-size="10" font-weight="800" fill="#FFFFFF" text-anchor="middle" font-family="DM Mono,monospace">'+lbl+'</text>';
+    svg+='<rect x="'+(totalW-lblW+2)+'" y="'+(alY-9)+'" width="'+lblW+'" height="18" rx="9" fill="#DC2626"/>'
+      +'<text class="alosp-label" x="'+(totalW-lblW/2+2)+'" y="'+(alY+4)+'" font-size="10" font-weight="800" fill="#FFFFFF" text-anchor="middle" font-family="DM Mono,monospace">'+lbl+'</text>';
   }
   monthData.forEach(function(d,i){
-    var x0=42+i*groupW;
-    if(i%2===1) svg+='<rect x="'+(x0-4)+'" y="'+topPad+'" width="'+(groupW-2)+'" height="'+chartH+'" fill="rgba(255,255,255,0.015)"/>';
+    var x0=42+i*groupW+depth;
+    if(i%2===1) svg+='<rect x="'+(x0-4-depth)+'" y="'+topPad+'" width="'+(groupW-2)+'" height="'+chartH+'" fill="rgba(255,255,255,0.015)"/>';
     svg+='<g transform="translate(0,'+topPad+')">'
       +bar(x0,irToH(d.intIR),'url(#gradBlue)','#3B82F6',d.intIR||0)
       +bar(x0+barW+gap,irToH(d.extIR),'url(#gradAmber)','#F59E0B',d.extIR||0)
       +bar(x0+barW*2+gap*2,irToH(d.cumIR),'url(#gradPurple)','#8B5CF6',d.cumIR||0)
       +'</g>';
-    svg+='<text x="'+(x0+barW+gap-3)+'" y="'+(topPad+chartH+14)+'" font-size="9" fill="#64748B" text-anchor="middle" font-weight="600">'+d.label+'</text>';
+    svg+='<text x="'+(x0+barW+gap-3-depth)+'" y="'+(topPad+chartH+14)+'" font-size="9" fill="#64748B" text-anchor="middle" font-weight="600">'+d.label+'</text>';
   });
   return '<svg viewBox="0 0 '+(totalW+60)+' '+(topPad+chartH+20)+'" xmlns="http://www.w3.org/2000/svg" style="width:100%;display:block;overflow:visible">'+svg+'</svg>';
 }
